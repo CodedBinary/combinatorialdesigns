@@ -4,6 +4,8 @@ from itertools import permutations
 # TODO:
 # Verification of design ness
 # Affine Singer
+# Nonexistence
+# Finding given parameters
 
 def binom(n,r,q):
     '''
