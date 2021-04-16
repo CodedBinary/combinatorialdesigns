@@ -4,7 +4,7 @@ A script to generate combinatorial designs. Currently working on those based on 
 
 Uses Sagemath. At the moment I'm running it by running `sage` and then `load("design.py")`
 
-** What is a design?
+# What is a design?
 
 There is one particular kind of design called a balanced incomplete block design. A balanced incomplete block design is formed from a set of points V and a collection of k-subsets of V, called B, with the property that every two points in V occur in the same number of elements of B. 
 
