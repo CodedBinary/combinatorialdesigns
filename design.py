@@ -6,6 +6,9 @@ from itertools import permutations
 # Affine Singer
 # Nonexistence
 # Finding given parameters
+# Update resolution classes if broken
+# Fix derived designs having references to original point set
+# Documentation of sage classes
 
 def binom(n,r,q):
     '''
@@ -23,6 +26,14 @@ def binom(n,r,q):
         bino = float(topfrac/bottomfrac)
         assert(bino.is_integer()), "binom returns an int"
         return int(bino)
+
+class designpoint():
+    '''
+    A point of the design
+    '''
+    # This was done so that bijections automatically update things
+    def __init__(self, value):
+        self.value = value
 
 class designblock():
     '''
@@ -71,6 +82,14 @@ class BIBD():
         else:
             self.symmetric = False
 
+    def pointinV(self, point):
+        '''
+        Returns the point object in the set of the designs points with the given value.
+        '''
+        for v in self.V:
+            if point == v.value:
+                return v
+
     def derived_params(self):
         '''
         Calculates the parameters for the derived design. A derived design is the intersection of all
@@ -86,8 +105,9 @@ class BIBD():
         if blockstar == -1:
             blockstar = self.blocks[-1]
         derived_design = BIBD(self.derived_params())
-        iteratelist = self.blocks
+        iteratelist = [i for i in self.blocks]
         iteratelist.remove(blockstar)
+        derived_design.V = self.V
         derived_design.blocks = [block.intersection(blockstar) for block in iteratelist]
         return derived_design
 
@@ -106,7 +126,7 @@ class BIBD():
         if blockstar == -1:
             blockstar = self.blocks[-1]
         residual_design = BIBD(self.residual_params())
-        iteratelist = self.blocks
+        iteratelist = [i for i in self.blocks]
         iteratelist.remove(blockstar)
         residual_design.blocks = [block.setminus(blockstar) for block in iteratelist]
         return residual_design
@@ -125,7 +145,7 @@ class BIBD():
         if blockstar == -1:
             blockstar = self.blocks[-1]
         complement_design = BIBD(self.complement_params())
-        iteratelist = self.blocks
+        iteratelist = [i for i in self.blocks]
         iteratelist.remove(blockstar)
 
         points = []
@@ -141,25 +161,26 @@ class BIBD():
         '''
         Finds a bijection from the current set of points to a subset of the integers
         '''
-        points = []
-        for block in self.blocks:
-            for point in block.elements:
-                if point not in points:
-                    points += [point]
-        for block in self.blocks:
-            block.elements = [points.index(point) for point in block.elements]
+        for i in range(len(self.V)):
+            self.V[i].value = i
+
+    def list_points(self):
+        '''
+            Returns the points of a design, in list form
+        '''
+        return [point.value for point in self.V]
 
     def list_blocks(self):
         '''
             Returns the blocks of a design, in list form
         '''
-        return [block.elements for block in self.blocks]
+        return [[point.value for point in block.elements] for block in self.blocks]
 
     def list_resolution_classes(self):
         '''
             Returns the resolution classes of a design, in list form
         '''
-        return [[block.elements for block in resolclass] for resolclass in resolutionclasses]
+        return [[[point.value for point in block.elements] for block in resolclass] for resolclass in resolutionclasses]
 
 class AG(BIBD):
     '''
@@ -179,13 +200,14 @@ class AG(BIBD):
         '''
         Gets the cosets of a given subspace in a vectorspace.
         '''
-        availpoints = [i for i in vectorspace]
+        availpoints = [i for i in self.V]
         cosets = []
         while availpoints != []:
-            point = availpoints[0]
-            coset = [point + elem for elem in subspace]
+            point = availpoints[0].value
+            coset = [self.pointinV(point + elem) for elem in subspace]
             cosets += [coset]
             [availpoints.remove(element) for element in coset]
+            print(self.V)
         return cosets
 
     def bijection(self, point, q):
@@ -207,8 +229,8 @@ class AG(BIBD):
         Bijects the affine geometry to the integers, mapping any tuple (a_{n-1}, a_{n-2}, ... a_0) to sum q^i a_i.
         If a_i are polynomials, converts them to integers.
         '''
-        for block in self.blocks:
-            block.elements = [self.bijection(point,self.q) for point in block.elements]
+        for point in self.V:
+            point.value = self.bijection(point.value, self.q)
 
     def generate(self):
         '''
@@ -217,6 +239,7 @@ class AG(BIBD):
 
         field = GF(self.q)
         V = VectorSpace(field, self.n)
+        self.V = [designpoint(v) for v in V]
 
         self.resolutionclasses = [[designblock(coset) for coset in self.getcosets([point for point in subspace], V)] for subspace in V.subspaces(self.d)]
 
@@ -242,30 +265,41 @@ class PG(BIBD):
         self.parameters = (int(self.v), int(self.k), int(self.lambduh))
         BIBD.__init__(self, self.parameters)
 
-    def projection(self, U, space):
+    def projection_points(self, space):
+        self.V = [designpoint(i) for i in space.subspaces(1)]
+
+    def projection(self, U):
         '''
-        Finds the projection of U in the space
+        Finds the projection of U in the space self.V
         '''
-        return [space.subspace([point]) for point in U]
+        projection = []
+        # Note that what follows isn't a duplication of pointinV: the point in U is not a point
+        # of the design, but a point of the vector space that is contained in a point of the design
+        for point in U:
+            for v in self.V:
+                if point in v.value:
+                    if v not in projection:
+                        projection += [v]
+                    break
+        return designblock(projection)
 
     def generate(self):
         '''
         Generates the projective geometry explicitly
-        Note: blocks = [...] creates q(^k?) too many of each element. Optimisation needed.
+        Note: projections = [...] creates q(^k?) too many of each element. Optimisation needed.
         '''
         field = GF(self.q)
         V = VectorSpace(field, self.n+1)
+        self.projection_points(V)
         
-        subspaces = [subspace for subspace in V.subspaces(self.d+1)]
-        projections = [self.projection([i for i in subspace], V) for subspace in V.subspaces(self.d+1)]
-        blocks = []
-        for projection in projections:
-            block = []
-            for space in projection:
-                if space not in block:
-                    block += [space]
-            blocks += [block]
-        self.blocks = [designblock([[elem for elem in space] for space in block if space.dimension() != 0]) for block in blocks]
+        self.blocks = [self.projection([i for i in subspace]) for subspace in V.subspaces(self.d+1)]
+        #for projection in projections:
+        #    block = []
+        #    for space in projection:
+        #        if space not in block:
+        #            block += [space]
+        #    blocks += [block]
+        #self.blocks = [designblock([[elem for elem in space] for space in block if space.dimension() != 0]) for block in blocks]
 
     def generate_hyperplanes(self):
         '''
@@ -284,6 +318,7 @@ class PG(BIBD):
         diffdesign = difference_method([diffset], (self.q**(self.n+1)-1)/(self.q-1))
         diffdesign.generate()
         self.blocks = diffdesign.blocks
+        self.V = diffdesign.V
 
 class difference_method(BIBD):
     def __init__(self, difference_sets, n, repetition="False"):
@@ -312,9 +347,10 @@ class difference_method(BIBD):
             
 
     def generate(self):
+        self.V = [designpoint(i) for i in range(self.n)]
         sets = []
         for difference_set in self.difference_sets:
-            sets += [[(x+i)%self.n for x in difference_set] for i in range(self.n)]
+            sets += [[self.V[(x+i)%self.n] for x in difference_set] for i in range(self.n)]
         if self.repetition == False:
             self.blocks = [designblock(theset) for theset in list(set(sets))]
         else:
