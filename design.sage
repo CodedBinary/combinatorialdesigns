@@ -431,14 +431,3 @@ def quad_residue_diff_set(q):
 
 def quad_residue_design(q):
     return difference_method([quad_residue_diff_set(q)],q)
-
-x = AG(3,2,2)
-x.generate()
-y = x.complement()
-y.generate()
-y.decouple_points()
-x.biject()
-print(y.list_blocks())
-print(y.list_points())
-print(x.list_blocks())
-print(x.list_points())
