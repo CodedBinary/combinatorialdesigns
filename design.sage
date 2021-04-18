@@ -4,11 +4,14 @@ from itertools import permutations
 # TODO:
 # Verification of design ness
 # Affine Singer
-# Nonexistence
+# Nonexistence (BRC)
+# Existence (Hadamard)
 # Finding given parameters
-# Update resolution classes if broken
-# Fix derived designs having references to original point set
 # Documentation of sage classes
+# Add option for derived designs to not refer to original point set
+# Extend affine to projective
+# Speed up PG.generate()
+# Fix PG.generate_hyperplanes for prime power
 
 def binom(n,r,q):
     '''
@@ -97,19 +100,12 @@ class BIBD():
         '''
         if self.symmetric == True and self.lambduh > 1:
             return [self.k, self.lambduh, self.lambduh - 1]
-    
+
     def derived(self, blockstar=-1):
-        '''
-        Returns the residual design with respect to blockstar. Defaults to final block.
-        '''
         if blockstar == -1:
             blockstar = self.blocks[-1]
-        derived_design = BIBD(self.derived_params())
-        iteratelist = [i for i in self.blocks]
-        iteratelist.remove(blockstar)
-        derived_design.V = self.V
-        derived_design.blocks = [block.intersection(blockstar) for block in iteratelist]
-        return derived_design
+
+        return derived_design(self, blockstar)
 
     def residual_params(self):
         '''
@@ -118,19 +114,13 @@ class BIBD():
         '''
         if self.symmetric == True:
             return [self.v-self.k, self.k - self.lambduh, self.lambduh]
-    
+
     def residual(self, blockstar=-1):
-        '''
-        Returns the residual design with respect to blockstar. Defaults to final block.
-        '''
         if blockstar == -1:
             blockstar = self.blocks[-1]
-        residual_design = BIBD(self.residual_params())
-        iteratelist = [i for i in self.blocks]
-        iteratelist.remove(blockstar)
-        residual_design.blocks = [block.setminus(blockstar) for block in iteratelist]
-        return residual_design
-
+        
+        return residual_design(self, blockstar)
+    
     def complement_params(self):
         '''
         Calculates the parameters for the complement design. The complement design is the complement of 
@@ -138,24 +128,8 @@ class BIBD():
         '''
         return [self.v, self.v-self.k, self.b-2*self.r+self.lambduh]
 
-    def complement(self, blockstar=-1):
-        '''
-        Returns the residual design with respect to blockstar. Defaults to final block.
-        '''
-        if blockstar == -1:
-            blockstar = self.blocks[-1]
-        complement_design = BIBD(self.complement_params())
-        iteratelist = [i for i in self.blocks]
-        iteratelist.remove(blockstar)
-
-        points = []
-        for block in self.blocks:
-            for point in block.elements:
-                if point not in points:
-                    points += [point]
-        pointset = designblock(points)
-        complement_design.blocks = [pointset.setminus(block) for block in iteratelist]
-        return complement_design
+    def complement(self):
+        return complement_design(self)
 
     def biject_obvious(self):
         '''
@@ -180,7 +154,94 @@ class BIBD():
         '''
             Returns the resolution classes of a design, in list form
         '''
-        return [[[point.value for point in block.elements] for block in resolclass] for resolclass in resolutionclasses]
+        return [[[point.value for point in block.elements] for block in resolclass] for resolclass in self.resolutionclasses]
+
+    def decouple_points(self):
+        self.V = [designpoint(point.value) for point in self.parent.V]
+        for block in self.blocks:
+            for i in range(len(block.elements)):
+                block.elements[i] = self.pointinV(block.elements[i].value)
+
+
+class derived_design(BIBD):
+    def __init__(self, parent, blockstar):
+        self.parent = parent
+        self.blockstar = blockstar
+        self.parameters = self.derived_params(parent)
+        BIBD.__init__(self, self.parameters)
+
+    def derived_params(self, parent):
+        '''
+        Calculates the parameters for the derived design. A derived design is the intersection of all
+        blocks with respect to some fixed block of the design. Only a design if symmetric.
+        '''
+        if self.parent.symmetric == True and self.parent.lambduh > 1:
+            return [self.parent.k, self.parent.lambduh, self.parent.lambduh - 1]
+    
+    def generate(self, blockstar=-1):
+        '''
+        Returns the derived design with respect to blockstar. Defaults to final block.
+        '''
+        if blockstar == -1:
+            blockstar = self.parent.blocks[-1]
+        iteratelist = [i for i in self.parent.blocks]
+        iteratelist.remove(blockstar)
+        self.V = [point for point in self.parent.V if point in blockstar.elements]
+        self.blocks = [block.intersection(blockstar) for block in iteratelist]
+
+class residual_design(BIBD):
+    def __init__(self, parent, blockstar):
+        self.parent = parent
+        self.blockstar = blockstar
+        self.parameters = self.residual_params()
+        BIBD.__init__(self, self.parameters)
+
+    def residual_params(self):
+        '''
+        Calculates the parameters for the residual design. The residual design is the difference of all
+        blocks with respect to some fixed block of the design. Only a design if symmetric.
+        '''
+        if self.parent.symmetric == True:
+            return [self.parent.v-self.parent.k, self.parent.k - self.parent.lambduh, self.parent.lambduh]
+
+    def generate(self, blockstar=-1):
+        '''
+        Returns the residual design with respect to blockstar. Defaults to final block.
+        '''
+        if blockstar == -1:
+            blockstar = self.parent.blocks[-1]
+        params = self.residual_params()
+        assert(params != None), "Not symmetric!"
+        iteratelist = [i for i in self.parent.blocks]
+        iteratelist.remove(blockstar)
+        self.V = [point for point in self.parent.V if point not in blockstar.elements]
+        self.blocks = [block.setminus(blockstar) for block in iteratelist]
+
+class complement_design(BIBD):
+    def __init__(self, parent):
+        self.parent = parent
+        self.parameters = self.complement_params()
+        BIBD.__init__(self, self.parameters)
+
+    def complement_params(self):
+        '''
+        Calculates the parameters for the complement design. The complement design is the complement of 
+        all of the blocks in the total point set.
+        '''
+        return [self.parent.v, self.parent.v-self.parent.k, self.parent.b-2*self.parent.r+self.parent.lambduh]
+
+    def generate(self, blockstar=-1):
+        '''
+        Returns the complement design with respect to blockstar. 
+        '''
+        if blockstar == -1:
+            blockstar = self.parent.blocks[-1]
+        iteratelist = [i for i in self.parent.blocks]
+
+        points = self.parent.V
+        pointset = designblock(points)
+        self.V = [i for i in points]
+        self.blocks = [pointset.setminus(block) for block in iteratelist]
 
 class AG(BIBD):
     '''
@@ -207,7 +268,6 @@ class AG(BIBD):
             coset = [self.pointinV(point + elem) for elem in subspace]
             cosets += [coset]
             [availpoints.remove(element) for element in coset]
-            print(self.V)
         return cosets
 
     def bijection(self, point, q):
@@ -292,7 +352,8 @@ class PG(BIBD):
         V = VectorSpace(field, self.n+1)
         self.projection_points(V)
         
-        self.blocks = [self.projection([i for i in subspace]) for subspace in V.subspaces(self.d+1)]
+        # Make sure to trim off the identity element
+        self.blocks = [self.projection([i for i in subspace][1:]) for subspace in V.subspaces(self.d+1)]
         #for projection in projections:
         #    block = []
         #    for space in projection:
@@ -311,10 +372,13 @@ class PG(BIBD):
         # our geometry with.
 
         field = GF(self.q**(self.n+1))
-        powers = field.primitive_element().powers(self.q**(self.n+1))
+        #powers = field.primitive_element().powers(self.q**(self.n+1))
+        powers = field.primitive_element().powers((self.q**(self.n+1)-1)/(self.q-1)-1)
+        print(powers)
         p = field.base().order()
         alpha = log(self.q)/log(p)
-        diffset = [i for i in range(len(powers)) if powers[i].polynomial().degree() <= self.n*alpha -1 and i < (self.q**(self.n+1)-1)/(self.q-1)]
+        diffset = [i for i in range(len(powers)) if powers[i].polynomial().degree() <= self.n*alpha -1 ]
+        print(diffset)
         diffdesign = difference_method([diffset], (self.q**(self.n+1)-1)/(self.q-1))
         diffdesign.generate()
         self.blocks = diffdesign.blocks
@@ -330,13 +394,14 @@ class difference_method(BIBD):
     def verify(self):
         differences = [0 for i in range(self.n)]
         for diffset in self.difference_sets:
-            for x,y in permutations(diffset, 2):
+            for x,y in permutations(diffset, int(2)):  # No idea why int(2) is needed
                 try:
                     differences[(x-y)%self.n] += 1
                 except KeyError:
                     differences[(x-y)%self.n] = 1
         differences[0]=differences[1]
 
+        print(differences)
         assert(len(set(differences)) == 1), "Not a difference system: Unequal differences"
         assert(len(set([len(i) for i in self.difference_sets])) == 1), "Not a difference system: Lengths not fixed"
 
@@ -367,3 +432,14 @@ def quad_residue_diff_set(q):
 
 def quad_residue_design(q):
     return difference_method([quad_residue_diff_set(q)],q)
+
+x = AG(3,2,2)
+x.generate()
+y = x.complement()
+y.generate()
+y.decouple_points()
+x.biject()
+print(y.list_blocks())
+print(y.list_points())
+print(x.list_blocks())
+print(x.list_points())
