@@ -7,8 +7,7 @@ from itertools import permutations
 # Nonexistence (BRC)
 # Existence (Hadamard)
 # Finding given parameters
-# Documentation of sage classes
-# Add option for derived designs to not refer to original point set
+# Documentation of sage classes and input/output/example
 # Extend affine to projective
 # Speed up PG.generate()
 # Fix PG.generate_hyperplanes for prime power
