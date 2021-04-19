@@ -90,7 +90,84 @@ sage: x.list_resolution_classes()
  [[1, 4, 5, 8], [2, 3, 6, 7]],
  [[1, 3, 5, 7], [2, 4, 6, 8]]]
 ```
-Notice that the point set and resolution classes updated themselves. Let's look at the complement.
+Notice that the point set and resolution classes updated themselves. Let's explore that a bit.
+```
+sage: x  = AG(3,2,2)
+sage: x.generate()
+sage: x.list_points()
+[(0, 0, 0),
+ (1, 0, 0),
+ (0, 1, 0),
+ (1, 1, 0),
+ (0, 0, 1),
+ (1, 0, 1),
+ (0, 1, 1),
+ (1, 1, 1)]
+sage: y = x.complement()
+sage: y.generate()
+sage: y.list_points()
+[(0, 0, 0),
+ (1, 0, 0),
+ (0, 1, 0),
+ (1, 1, 0),
+ (0, 0, 1),
+ (1, 0, 1),
+ (0, 1, 1),
+ (1, 1, 1)]
+sage: x.biject()
+sage: y.list_points()
+[1, 2, 3, 4, 5, 6, 7, 8]
+sage: x.list_points()
+[1, 2, 3, 4, 5, 6, 7, 8]
+```
+
+So they automatically update. If this behaviour is undesired, we have a method to fix that.
+
+```
+sage: x = AG(3,2,2)
+sage: x.generate()
+sage: x.list_points()
+[(0, 0, 0),
+ (1, 0, 0),
+ (0, 1, 0),
+ (1, 1, 0),
+ (0, 0, 1),
+ (1, 0, 1),
+ (0, 1, 1),
+ (1, 1, 1)]
+sage: y = x.complement()
+sage: y.generate()
+sage: y.decouple_points()
+sage: x.biject()
+sage: y.list_points()
+[(0, 0, 0),
+ (1, 0, 0),
+ (0, 1, 0),
+ (1, 1, 0),
+ (0, 0, 1),
+ (1, 0, 1),
+ (0, 1, 1),
+ (1, 1, 1)]
+sage: y.list_blocks()
+[[(0, 0, 1), (1, 0, 1), (0, 1, 1), (1, 1, 1)],
+ [(0, 0, 0), (1, 0, 0), (0, 1, 0), (1, 1, 0)],
+ [(0, 1, 0), (1, 1, 0), (0, 0, 1), (1, 0, 1)],
+ [(0, 0, 0), (1, 0, 0), (0, 1, 1), (1, 1, 1)],
+ [(1, 0, 0), (1, 1, 0), (0, 0, 1), (0, 1, 1)],
+ [(0, 0, 0), (0, 1, 0), (1, 0, 1), (1, 1, 1)],
+ [(1, 0, 0), (0, 1, 0), (0, 0, 1), (1, 1, 1)],
+ [(0, 0, 0), (1, 1, 0), (1, 0, 1), (0, 1, 1)],
+ [(0, 1, 0), (1, 1, 0), (0, 1, 1), (1, 1, 1)],
+ [(0, 0, 0), (1, 0, 0), (0, 0, 1), (1, 0, 1)],
+ [(1, 0, 0), (0, 1, 0), (1, 0, 1), (0, 1, 1)],
+ [(0, 0, 0), (1, 1, 0), (0, 0, 1), (1, 1, 1)],
+ [(1, 0, 0), (1, 1, 0), (1, 0, 1), (1, 1, 1)],
+ [(0, 0, 0), (0, 1, 0), (0, 0, 1), (0, 1, 1)]]
+```
+
+As you can see, we bijected x, but we decoupled y first. As a result, the points of y are what they were at the time of decoupling.
+
+We can create designs from designs, though. Let's look at the complement.
 
 ```
 sage: y = x.complement()
@@ -115,3 +192,16 @@ sage: y.list_blocks()
  [2, 4, 6, 8],
  [1, 3, 5, 7]]
 ```
+
+Perhaps we want to know if a design exists at all.
+
+```
+sage: x = BIBD([53,13,3])
+sage: x.existence()
+(False, 'common divisibility argument mod 5')
+sage: x = BIBD([7,3,1])
+sage: x.existence()
+(True, 'Hadamard design of order 2')
+```
+
+At the moment, we are working on a way to check if the complement exists smoothly.

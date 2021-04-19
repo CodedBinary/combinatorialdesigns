@@ -4,9 +4,9 @@ from itertools import permutations
 # TODO:
 # Verification of design ness
 # Affine Singer
-# Nonexistence (BRC and Fischers)
-# Finding given parameters (finish PG)
 # Documentation of sage classes and input/output/example
+# Documentation of functions
+# Example usage in README
 # Extend affine to projective
 # Speed up PG.generate()
 # Fix PG.generate_hyperplanes for prime power
@@ -100,9 +100,6 @@ class BIBD():
             return [self.k, self.lambduh, self.lambduh - 1]
 
     def derived(self, blockstar=-1):
-        if blockstar == -1:
-            blockstar = self.blocks[-1]
-
         return derived_design(self, blockstar)
 
     def residual_params(self):
@@ -182,41 +179,120 @@ class BIBD():
             return False
         maximalq = gcd(alpha1, alpha2)
         for divisor in maximalq.divisors():
-            print(alpha1, alpha2, divisor)
             if binom(alpha1/divisor - 1, alpha2/divisor-1, p1**divisor) == self.lambduh:
                 return (alpha1/divisor, p1**divisor, alpha2/divisor)
-        print(maximalq)
         return False
 
     def permits_PG(self):
-        for prime in prime_range(self.v):
-            possiblen = []
-            i=0
-            while prime**i <= self.v:
-                possiblen += [prime**i]
-                i += 1
-            if x in possiblen:
-               pass 
+        '''
+        Optimise
+        '''
+        possiblesols = []
+        primepower = 2
+        n = 1
+        cumulativeresults = []
+        while binom(2,1,primepower) <= self.v:
+            guessselfn = binom(n,1,primepower)
+            if guessselfn == self.v:
+                possiblesols += [[n-1,primepower, cumulativeresults]]
+                primepower = next_prime_power(primepower)
+                n = 1 
+                cumulativeresults = []
+                
+            if guessselfn < self.v:
+                n += 1
+                cumulativeresults += [guessselfn]
+            else:
+                primepower = next_prime_power(primepower)
+                n = 1 
+                cumulativeresults = []
+        
+        for n, primepower, cumulativeresults in possiblesols:
+            if self.k in cumulativeresults:
+                if binom(n-1,cumulativeresults.index(self.k)-1,primepower) == self.lambduh:
+                    return (n,primepower,cumulativeresults.index(self.k))
+        return False
+         
+    def permits_quad_residue(self):
+        if is_prime_power(self.v):
+            if self.k == (v-1)/2 and self.lambduh == (v-3)/4:
+                return v
     
     def existence(self):
-        if self.permits_Hadamard():
-            print(self.parameters, "Hadamard design of order", self.permits_Hadamard())
+        a = self.k - self.lambduh
+        b = (-1)**((self.v-1)/2)* self.lambduh
 
-        if self.permits_AG():
-            print("Affine geometry", self.permits_AG())
+        if self.b < self.v:
+            print("Violates Fischer's Inequality")
 
-        if v%2 == 0:
-            if sqrt(k-lambduh).is_integer():
-                print(self.parameters, "possible,", k-lambduh, "is a perfect square")
+        elif self.k == self.v - 1 and self.lambduh == self.v - 2:
+            return(True, "Trivial case")
+
+        elif self.permits_Hadamard():
+            return (True, "Hadamard design of order " + str(self.permits_Hadamard()))
+
+        elif self.permits_quad_residue():
+            return (True, "Quadratic Residue " + str(self.permits_quad_residue()))
+
+        elif self.r == self.lambduh + self.k and self.lambduh < 3:
+            return (True, "Quasiresidual design")
+
+        elif self.permits_AG():
+            return (True, "Affine geometry " + str(self.permits_AG()))
+
+        elif self.permits_PG():
+            return (True, "Projective geometry " + str(self.permits_PG()))
+
+        elif v%2 == 0:
+            # The Bruck-Ryser-Chowla theorem states that, for v even, a (v,k,lambda) design exists, then
+            # (k-lambda) is a perfect square
+            if sqrt(a).is_integer():
+                return (0.5, str(k-lambduh) + " is a perfect square")
             else:
-                print(self.parameters, "impossible by BRC,", k-lambduh, "not perfect square")
+                return (False, "by BRC, " + str(k-lambduh) + " not perfect square")
+
         elif v%2 == 1:
-            if sqrt(k-lambduh).is_integer():
-                print(self.parameters, "possible, solution to BRC given by", (sqrt(k-lambduh), 1, 0))
-            elif sqrt(lambduh).is_integer() and is_even((v-1)/2):
-                print(self.parameters, "possible, solution to BRC given by", (sqrt(lambduh), 0, 1))
+            # The Bruck-Ryser-Chowla theorem states that if, for v odd, a (v,k,lambda) design exists, then
+            # z^2 = (k-lambda) x^2 + (-1)^((v-1)/2) lambda y^2 has a nontrivial solution
+
+
+            # Let m be a factor appearing once in ab. Let c be b if m divides a, and a if b divides m. 
+            # If {x^2 | x in Z_m} cap {c*x^2 | x in Z_m} = {0}, then the equation z^2 = ax^2 + by^2
+            # has no solutions. Simply take both sides mod m, deduce two squares must be 0, and sub in.
+            possiblem = [fact[0] for fact in factor(a*b) if fact[1]==1]
+            for m in possiblem:
+                if m.divides(a):
+                    c = int(b)
+                else:
+                    c = int(a)
+
+                field = Integers(m)
+                possiblez = set([i**2 for i in field]).intersection(set([c*i**2 for i in field]))
+                if possiblez == {0}:
+                    return (False, "common divisibility argument mod " + str(m))
+
+            # Easy solutions
+            if sqrt(a).is_integer():
+                return (0.5, "solution to BRC given by " + str((sqrt(a), 1, 0)))
+            elif sqrt(self.lambduh).is_integer() and b>0:
+                return (0.5, "solution to BRC given by " + str((sqrt(self.lambduh), 0, 1)))
+            elif sqrt(a+b).is_integer():
+                return (0.5, "solution to BRC given by " + str((sqrt(a+b), 1, 1)))
+            elif a == 1 and b == 1:
+                return (0.5, "solution to BRC given by " + str((5,3,4)))
+
+            # If a=b=0 mod m and a/m = b/m != 0 mod m, we immediately know that z^2 = 0 mod m
+            # and then a/m x^2 + b/m y^2 = 0 mod m, which means a/m (x^2+y^2) = 0 mod m. For m=3,
+            # then x^2+y^2 in {0,1,2}, and since {x in Z_3 | exists c in Z_3\{0} : cx = 0} = {0},
+            # we know that x^2+y^2 in {0}, so we have a common divisibility argument.
+            elif a%3 == 0 and b%3 == 0 and (a/3)%3 == (b/3)%3 and ((a/3)%3 == 2 or (a/3)%3 == 1):
+                return (False, "common divisibility argument mod 3")
+            elif (a%4 == 0 and (a/4)%4 != 0 and (b%4 == 2 or b%4 == 3)) or (b%4 == 0 and (b/4)%4 != 0 and (a%4 == 2 or a%4 == 3)):
+                return (False, "common divisibility argument mod 4")
+
+            # Giving up
             else:
-                print("try BRC?", self.parameters, k-lambduh, (-1)**((v-1)/2), lambduh)
+                return (0.5, "try BRC?" + str(self.parameters) + "z^2 = " + str(a) + "x^2 + " + str(b) + "y^2")
 
 class derived_design(BIBD):
     def __init__(self, parent, blockstar):
@@ -457,7 +533,6 @@ class difference_method(BIBD):
                     differences[(x-y)%self.n] = 1
         differences[0]=differences[1]
 
-        print(differences)
         assert(len(set(differences)) == 1), "Not a difference system: Unequal differences"
         assert(len(set([len(i) for i in self.difference_sets])) == 1), "Not a difference system: Lengths not fixed"
 
@@ -495,6 +570,21 @@ for v in range(50):
             try:
                 x = BIBD([v,k,lambduh])
                 if x.symmetric == True:
-                    x.existence()
+                    exists = x.existence()
+                    if(exists[0] == True):
+                        print(x.parameters, "Exists:", exists[1])
+                    elif(exists[0] == False):
+                        print(x.parameters, "Does not exist:", exists[1])
+                    else:
+                        if x.k != x.v-1:
+                            y = x.complement()
+                            complexists = y.existence()
+                            if complexists[0] == 1:
+                                print(x.parameters, "Complement exists:", complexists[1])
+                            elif complexists[0] == 0.5:
+                                print(x.parameters, "May exist:", exists[1])
+                                print(x.parameters, "Complement may exist:", complexists[1])
+                            else:
+                                print(x.parameters, "Unknown:", exists[1])
             except AssertionError:
                 pass
