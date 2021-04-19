@@ -56,7 +56,7 @@ class BIBD():
     and a collection of k-subsets of V, called B, with the property that every two points in V occur in the
     same number of elements of B. For instance, if V={0,1,2,3,4,5,6} and B is given by
     {{1,2,4},
-    {2,3,5},
+    {)2,3,5},
     {3,4,6},
     {4,5,0},
     {5,6,1},
@@ -70,6 +70,7 @@ class BIBD():
             self.v, self.k, self.lambduh = (int(parameters[0]), int(parameters[1]), int(parameters[2]))
             # v is the size of V, k is how long each block is, and lambduh (lambda) is how many blocks each pair occurs in
             self.calculate_extra_parameters()
+            self.is_complement = False
         
 
     def calculate_extra_parameters(self):
@@ -99,8 +100,17 @@ class BIBD():
         if self.symmetric == True and self.lambduh > 1:
             return [self.k, self.lambduh, self.lambduh - 1]
 
+    def derived_inverse_params(self):
+        x = self.complement()
+        x = x.residual()
+        x = x.complement()
+        return x.parameters
+
     def derived(self, blockstar=-1):
         return derived_design(self, blockstar)
+
+    def derived_inverse(self):
+        return BIBD([derived_inverse_params(self)])
 
     def residual_params(self):
         '''
@@ -110,10 +120,14 @@ class BIBD():
         if self.symmetric == True:
             return [self.v-self.k, self.k - self.lambduh, self.lambduh]
 
+    def residual_inverse_params(self):
+        if self.r == self.k + self.lambduh:
+            return [self.v+self.k+self.lambduh, self.k + self.lambduh, self.lambduh]
+
+    def residual_inverse(self):
+        return BIBD([residual_inverse_params(self)])
+
     def residual(self, blockstar=-1):
-        if blockstar == -1:
-            blockstar = self.blocks[-1]
-        
         return residual_design(self, blockstar)
     
     def complement_params(self):
@@ -215,18 +229,58 @@ class BIBD():
          
     def permits_quad_residue(self):
         if is_prime_power(self.v):
-            if self.k == (v-1)/2 and self.lambduh == (v-3)/4:
-                return v
+            if self.k == (self.v-1)/2 and self.lambduh == (self.v-3)/4:
+                return self.v
     
     def existence(self):
+        '''
+        Checks if a design can be constructed as a constructible complement or derived or multiple design
+        '''
+
+        if self.existence_basic()[0] == True:
+            return (True, self.existence_basic()[1])
+
+        for possiblelambduh in divisors(self.lambduh):
+            if possiblelambduh != self.lambduh:
+                try:
+                    x = BIBD([self.v,self.k,possiblelambduh])
+                    exist = x.existence()
+                    if exist[0] == True:
+                        return (True, "Multiply by " + str(self.lambduh/possiblelambduh) + ": " + exist[1])
+                except AssertionError:
+                    pass
+
+        if self.is_complement == False:
+            y = self.complement()
+            y.is_complement = True
+            exist = y.existence()
+            if exist[0] == True:
+                return (True, "Complement of: " + exist[1])
+
+        if self.symmetric:
+            try:
+                y = self.residual()
+                y.is_complement = False
+                exist = y.existence()
+                if exist[0] == True:
+                    return (True, "Residual of: " + exist[1])
+            except AssertionError:
+                pass
+
+        return (0.5, "Maybe")
+
+    def existence_basic(self):
+        '''
+        Checks if a design can be constructed from other objects - vector fields, Hadamard matrices, etc
+        '''
         a = self.k - self.lambduh
         b = (-1)**((self.v-1)/2)* self.lambduh
 
         if self.b < self.v:
-            print("Violates Fischer's Inequality")
+            return (False, "Violates Fischer's Inequality")
 
         elif self.k == self.v - 1 and self.lambduh == self.v - 2:
-            return(True, "Trivial case")
+            return (True, "Trivial case")
 
         elif self.permits_Hadamard():
             return (True, "Hadamard design of order " + str(self.permits_Hadamard()))
@@ -235,7 +289,7 @@ class BIBD():
             return (True, "Quadratic Residue " + str(self.permits_quad_residue()))
 
         elif self.r == self.lambduh + self.k and self.lambduh < 3:
-            return (True, "Quasiresidual design")
+            return (True, "Quasiresidual design " + str((self.v, self.k, self.lambduh)))
 
         elif self.permits_AG():
             return (True, "Affine geometry " + str(self.permits_AG()))
@@ -243,15 +297,15 @@ class BIBD():
         elif self.permits_PG():
             return (True, "Projective geometry " + str(self.permits_PG()))
 
-        elif v%2 == 0:
+        elif self.v%2 == 0:
             # The Bruck-Ryser-Chowla theorem states that, for v even, a (v,k,lambda) design exists, then
             # (k-lambda) is a perfect square
             if sqrt(a).is_integer():
-                return (0.5, str(k-lambduh) + " is a perfect square")
+                return (0.5, str(self.k-self.lambduh) + " is a perfect square")
             else:
-                return (False, "by BRC, " + str(k-lambduh) + " not perfect square")
+                return (False, "by BRC, " + str(self.k-self.lambduh) + " not perfect square")
 
-        elif v%2 == 1:
+        elif self.v%2 == 1:
             # The Bruck-Ryser-Chowla theorem states that if, for v odd, a (v,k,lambda) design exists, then
             # z^2 = (k-lambda) x^2 + (-1)^((v-1)/2) lambda y^2 has a nontrivial solution
 
@@ -259,17 +313,20 @@ class BIBD():
             # Let m be a factor appearing once in ab. Let c be b if m divides a, and a if b divides m. 
             # If {x^2 | x in Z_m} cap {c*x^2 | x in Z_m} = {0}, then the equation z^2 = ax^2 + by^2
             # has no solutions. Simply take both sides mod m, deduce two squares must be 0, and sub in.
-            possiblem = [fact[0] for fact in factor(a*b) if fact[1]==1]
-            for m in possiblem:
-                if m.divides(a):
-                    c = int(b)
-                else:
-                    c = int(a)
+            if a*b != 0:
+                possiblem = [fact[0] for fact in factor(a*b) if fact[1]==1]
+                for m in possiblem:
+                    if m.divides(a):
+                        c = int(b)
+                    else:
+                        c = int(a)
 
-                field = Integers(m)
-                possiblez = set([i**2 for i in field]).intersection(set([c*i**2 for i in field]))
-                if possiblez == {0}:
-                    return (False, "common divisibility argument mod " + str(m))
+                    field = Integers(m)
+                    possiblez = set([i**2 for i in field]).intersection(set([c*i**2 for i in field]))
+                    if possiblez == {0}:
+                        return (False, "common divisibility argument mod " + str(m))
+            else:
+                return (0.5, "solution to BRC given by ", str((0,1,0)))
 
             # Easy solutions
             if sqrt(a).is_integer():
@@ -308,6 +365,8 @@ class derived_design(BIBD):
         '''
         if self.parent.symmetric == True and self.parent.lambduh > 1:
             return [self.parent.k, self.parent.lambduh, self.parent.lambduh - 1]
+        else: 
+            return []
     
     def generate(self, blockstar=-1):
         '''
@@ -334,6 +393,8 @@ class residual_design(BIBD):
         '''
         if self.parent.symmetric == True:
             return [self.parent.v-self.parent.k, self.parent.k - self.parent.lambduh, self.parent.lambduh]
+        else:
+            return []
 
     def generate(self, blockstar=-1):
         '''
@@ -353,6 +414,7 @@ class complement_design(BIBD):
         self.parent = parent
         self.parameters = self.complement_params()
         BIBD.__init__(self, self.parameters)
+        self.is_complement = True
 
     def complement_params(self):
         '''
@@ -570,21 +632,6 @@ for v in range(50):
             try:
                 x = BIBD([v,k,lambduh])
                 if x.symmetric == True:
-                    exists = x.existence()
-                    if(exists[0] == True):
-                        print(x.parameters, "Exists:", exists[1])
-                    elif(exists[0] == False):
-                        print(x.parameters, "Does not exist:", exists[1])
-                    else:
-                        if x.k != x.v-1:
-                            y = x.complement()
-                            complexists = y.existence()
-                            if complexists[0] == 1:
-                                print(x.parameters, "Complement exists:", complexists[1])
-                            elif complexists[0] == 0.5:
-                                print(x.parameters, "May exist:", exists[1])
-                                print(x.parameters, "Complement may exist:", complexists[1])
-                            else:
-                                print(x.parameters, "Unknown:", exists[1])
+                    print(x.parameters, x.existence())
             except AssertionError:
                 pass
