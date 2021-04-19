@@ -257,15 +257,15 @@ class BIBD():
             if exist[0] == True:
                 return (True, "Complement of: " + exist[1])
 
-        if self.symmetric:
-            try:
-                y = self.residual()
-                y.is_complement = False
-                exist = y.existence()
-                if exist[0] == True:
-                    return (True, "Residual of: " + exist[1])
-            except AssertionError:
-                pass
+        #if self.symmetric:
+        #    try:
+        #        y = self.residual()
+        #        y.is_complement = False
+        #        exist = y.existence()
+        #        if exist[0] == True:
+        #            return (True, "Residual of: " + exist[1])
+        #    except AssertionError:
+        #        pass
 
         return (0.5, "Maybe")
 
@@ -289,9 +289,16 @@ class BIBD():
             return (True, "Quadratic Residue " + str(self.permits_quad_residue()))
 
         elif self.r == self.lambduh + self.k and self.lambduh < 3:
-            return (True, "Quasiresidual design " + str((self.v, self.k, self.lambduh)))
+            return (True, "Quasiresidual design" + str((self.v, self.k, self.lambduh)))
 
-        elif self.permits_AG():
+        elif self.symmetric:
+            if self.lambduh > 1:
+                y = self.residual()
+                if y.lambduh < 3:
+                    return (True, "Design giving quasiresidual design" + str(y.parameters))
+
+
+        if self.permits_AG():
             return (True, "Affine geometry " + str(self.permits_AG()))
 
         elif self.permits_PG():
