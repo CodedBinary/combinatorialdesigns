@@ -4,9 +4,8 @@ from itertools import permutations
 # TODO:
 # Verification of design ness
 # Affine Singer
-# Nonexistence (BRC)
-# Existence (Hadamard)
-# Finding given parameters
+# Nonexistence (BRC and Fischers)
+# Finding given parameters (finish PG)
 # Documentation of sage classes and input/output/example
 # Extend affine to projective
 # Speed up PG.generate()
@@ -161,6 +160,63 @@ class BIBD():
             for i in range(len(block.elements)):
                 block.elements[i] = self.pointinV(block.elements[i].value)
 
+    def permits_Hadamard(self):
+        n = self.k - self.lambduh
+        if self.v == 4*n-1 and self.k == 2*n-1 and self.lambduh == n-1:
+            return n
+        else:
+            return False
+
+    def permits_AG(self):
+        if is_prime_power(self.v):
+            p1, alpha1 = is_prime_power(self.v, get_data=True)
+        else:
+            return False
+
+        if is_prime_power(self.k):
+            p2, alpha2 = is_prime_power(self.k, get_data=True)
+        else:
+            return False
+
+        if p1 != p2:
+            return False
+        maximalq = gcd(alpha1, alpha2)
+        for divisor in maximalq.divisors():
+            print(alpha1, alpha2, divisor)
+            if binom(alpha1/divisor - 1, alpha2/divisor-1, p1**divisor) == self.lambduh:
+                return (alpha1/divisor, p1**divisor, alpha2/divisor)
+        print(maximalq)
+        return False
+
+    def permits_PG(self):
+        for prime in prime_range(self.v):
+            possiblen = []
+            i=0
+            while prime**i <= self.v:
+                possiblen += [prime**i]
+                i += 1
+            if x in possiblen:
+               pass 
+    
+    def existence(self):
+        if self.permits_Hadamard():
+            print(self.parameters, "Hadamard design of order", self.permits_Hadamard())
+
+        if self.permits_AG():
+            print("Affine geometry", self.permits_AG())
+
+        if v%2 == 0:
+            if sqrt(k-lambduh).is_integer():
+                print(self.parameters, "possible,", k-lambduh, "is a perfect square")
+            else:
+                print(self.parameters, "impossible by BRC,", k-lambduh, "not perfect square")
+        elif v%2 == 1:
+            if sqrt(k-lambduh).is_integer():
+                print(self.parameters, "possible, solution to BRC given by", (sqrt(k-lambduh), 1, 0))
+            elif sqrt(lambduh).is_integer() and is_even((v-1)/2):
+                print(self.parameters, "possible, solution to BRC given by", (sqrt(lambduh), 0, 1))
+            else:
+                print("try BRC?", self.parameters, k-lambduh, (-1)**((v-1)/2), lambduh)
 
 class derived_design(BIBD):
     def __init__(self, parent, blockstar):
@@ -378,17 +434,18 @@ class PG(BIBD):
         alpha = log(self.q)/log(p)
         diffset = [i for i in range(len(powers)) if powers[i].polynomial().degree() <= self.n*alpha -1 ]
         print(diffset)
-        diffdesign = difference_method([diffset], (self.q**(self.n+1)-1)/(self.q-1))
+        diffdesign = difference_method([diffset], (self.q**(self.n+1)-1)/(self.q-1), check=False)
         diffdesign.generate()
         self.blocks = diffdesign.blocks
         self.V = diffdesign.V
 
 class difference_method(BIBD):
-    def __init__(self, difference_sets, n, repetition="False"):
+    def __init__(self, difference_sets, n, repetition="False", check=True):
         self.difference_sets = difference_sets
         self.n = n
         self.repetition = repetition
-        self.verify()
+        if check == True:
+            self.verify()
         
     def verify(self):
         differences = [0 for i in range(self.n)]
@@ -431,3 +488,13 @@ def quad_residue_diff_set(q):
 
 def quad_residue_design(q):
     return difference_method([quad_residue_diff_set(q)],q)
+
+for v in range(50):
+    for k in range(2,v):
+        for lambduh in range(1,5):
+            try:
+                x = BIBD([v,k,lambduh])
+                if x.symmetric == True:
+                    x.existence()
+            except AssertionError:
+                pass
