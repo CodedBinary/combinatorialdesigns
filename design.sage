@@ -240,6 +240,9 @@ class BIBD():
         if self.existence_basic()[0] == True:
             return (True, self.existence_basic()[1])
 
+        if self.existence_basic()[0] == False:
+            return (False, self.existence_basic()[1])
+
         for possiblelambduh in divisors(self.lambduh):
             if possiblelambduh != self.lambduh:
                 try:
@@ -256,16 +259,6 @@ class BIBD():
             exist = y.existence()
             if exist[0] == True:
                 return (True, "Complement of: " + exist[1])
-
-        #if self.symmetric:
-        #    try:
-        #        y = self.residual()
-        #        y.is_complement = False
-        #        exist = y.existence()
-        #        if exist[0] == True:
-        #            return (True, "Residual of: " + exist[1])
-        #    except AssertionError:
-        #        pass
 
         return (0.5, "Maybe")
 
@@ -291,20 +284,19 @@ class BIBD():
         elif self.r == self.lambduh + self.k and self.lambduh < 3:
             return (True, "Quasiresidual design" + str((self.v, self.k, self.lambduh)))
 
+        elif self.permits_AG():
+            return (True, "Affine geometry " + str(self.permits_AG()))
+
+        elif self.permits_PG():
+            return (True, "Projective geometry " + str(self.permits_PG()))
+
         elif self.symmetric:
             if self.lambduh > 1:
                 y = self.residual()
                 if y.lambduh < 3:
                     return (True, "Design giving quasiresidual design" + str(y.parameters))
 
-
-        if self.permits_AG():
-            return (True, "Affine geometry " + str(self.permits_AG()))
-
-        elif self.permits_PG():
-            return (True, "Projective geometry " + str(self.permits_PG()))
-
-        elif self.v%2 == 0:
+        if self.v%2 == 0:
             # The Bruck-Ryser-Chowla theorem states that, for v even, a (v,k,lambda) design exists, then
             # (k-lambda) is a perfect square
             if sqrt(a).is_integer():
