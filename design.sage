@@ -6,10 +6,11 @@
 # Affine Singer
 # Documentation of sage classes and input/output/example
 # Documentation of functions
-# Example usage in README
-# Extend affine to projective
-# Speed up PG.generate()
+# More example usage in README
+# Extend affine to projective, rename projective to affine
+# Speed up PG.generate() and other timing based stuff
 # Fix PG.generate_hyperplanes for prime power
+# Generate designs that exist
 
 def binom(n,r,q):
     '''
@@ -320,9 +321,6 @@ class BIBD():
         elif self.k == self.v - 1 and self.lambduh == self.v - 2:
             return (True, "Trivial case")
 
-        elif hadamard:
-            return (True, "Hadamard design of order " + str(hadamard[0]) + ": Formed by Hadamard matrix of order " + str(4*hadamard[0]) + ": " + hadamard[1])
-
         elif self.permits_quad_residue():
             return (True, "Quadratic Residue " + str(self.permits_quad_residue()))
 
@@ -331,6 +329,9 @@ class BIBD():
 
         elif self.permits_PG():
             return (True, "Projective geometry " + str(self.permits_PG()))
+
+        elif hadamard:
+            return (True, "Hadamard design of order " + str(hadamard[0]) + ": Formed by Hadamard matrix of order " + str(4*hadamard[0]) + ": " + hadamard[1])
 
         if self.v%2 == 0:
             # The Bruck-Ryser-Chowla theorem states that, for v even, a (v,k,lambda) design exists, then
