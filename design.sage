@@ -1,6 +1,6 @@
-#!/usr/bin/env sage
-from itertools import permutations
-
+##!/usr/bin/env sage
+#from itertools import permutations
+#
 # TODO:
 # Verification of design ness
 # Affine Singer
@@ -71,6 +71,7 @@ class BIBD():
             # v is the size of V, k is how long each block is, and lambduh (lambda) is how many blocks each pair occurs in
             self.calculate_extra_parameters()
             self.is_complement = False
+            self.is_residual = False
         
 
     def calculate_extra_parameters(self):
@@ -125,7 +126,7 @@ class BIBD():
             return [self.v+self.k+self.lambduh, self.k + self.lambduh, self.lambduh]
 
     def residual_inverse(self):
-        return BIBD([residual_inverse_params(self)])
+        return BIBD(self.residual_inverse_params())
 
     def residual(self, blockstar=-1):
         return residual_design(self, blockstar)
@@ -171,10 +172,40 @@ class BIBD():
             for i in range(len(block.elements)):
                 block.elements[i] = self.pointinV(block.elements[i].value)
 
-    def permits_Hadamard(self):
+    def exists_Hadamard_matrix(self, n):
+        if n == 0:
+            return (False, "Trivially")
+
+        if n == 2:
+            return (True, "Hadamard matrix of order 2 exists")
+
+        if n%4 != 0:
+            return (False, "Hadamard matrix order not divisible by 4")
+
+        if is_prime_power(n-1) and (n-1)%4 == 3:
+            return (True, str(n-1) + " is prime power 3 mod 4")
+
+        if n%2 == 0:
+            exist = self.exists_Hadamard_matrix(n/2)
+            if exist[0] == True:
+                return (True, str("times 2, ") + exist[1])
+        
+        if n%4 == 0:
+            for divisor1 in divisors(n/4):
+                divisor2 = n/(4*divisor1)
+                exist1 = self.exists_Hadamard_matrix(divisor1)
+                exist2 = self.exists_Hadamard_matrix(divisor2)
+                if exist1[0] == True and exist2[0] == True:
+                    return (True, str("Formed from: ") + exist1[1] + ", and " + exist2[1])
+
+        return (0.5, "Tried everything")
+
+    def permits_Hadamard_design(self):
         n = self.k - self.lambduh
-        if self.v == 4*n-1 and self.k == 2*n-1 and self.lambduh == n-1:
-            return n
+        exist = self.exists_Hadamard_matrix(4*n)
+        if exist[0] == True:
+            if self.v == 4*n-1 and self.k == 2*n-1 and self.lambduh == n-1:
+                return (n, exist[1])
         else:
             return False
 
@@ -260,6 +291,19 @@ class BIBD():
             if exist[0] == True:
                 return (True, "Complement of: " + exist[1])
 
+        if self.r == self.k + self.lambduh and self.is_residual == False:
+            y = self.residual_inverse()
+            exist = y.existence()
+            if exist[0] == True:
+                return (True, "Residual of: " + exist[1])
+
+        if self.symmetric:
+            x = self.residual()
+            if x.lambduh < 3:
+                exist = x.existence()
+                if exist[0] == True:
+                    return (True, "Quasiresidual design: " + str(x.parameters) + exist[1])
+
         return (0.5, "Maybe")
 
     def existence_basic(self):
@@ -269,32 +313,24 @@ class BIBD():
         a = self.k - self.lambduh
         b = (-1)**((self.v-1)/2)* self.lambduh
 
+        hadamard = self.permits_Hadamard_design()
         if self.b < self.v:
             return (False, "Violates Fischer's Inequality")
 
         elif self.k == self.v - 1 and self.lambduh == self.v - 2:
             return (True, "Trivial case")
 
-        elif self.permits_Hadamard():
-            return (True, "Hadamard design of order " + str(self.permits_Hadamard()))
+        elif hadamard:
+            return (True, "Hadamard design of order " + str(hadamard[0]) + ": Formed by Hadamard matrix of order " + str(4*hadamard[0]) + ": " + hadamard[1])
 
         elif self.permits_quad_residue():
             return (True, "Quadratic Residue " + str(self.permits_quad_residue()))
-
-        elif self.r == self.lambduh + self.k and self.lambduh < 3:
-            return (True, "Quasiresidual design" + str((self.v, self.k, self.lambduh)))
 
         elif self.permits_AG():
             return (True, "Affine geometry " + str(self.permits_AG()))
 
         elif self.permits_PG():
             return (True, "Projective geometry " + str(self.permits_PG()))
-
-        elif self.symmetric:
-            if self.lambduh > 1:
-                y = self.residual()
-                if y.lambduh < 3:
-                    return (True, "Design giving quasiresidual design" + str(y.parameters))
 
         if self.v%2 == 0:
             # The Bruck-Ryser-Chowla theorem states that, for v even, a (v,k,lambda) design exists, then
@@ -325,7 +361,7 @@ class BIBD():
                     if possiblez == {0}:
                         return (False, "common divisibility argument mod " + str(m))
             else:
-                return (0.5, "solution to BRC given by ", str((0,1,0)))
+                return (0.5, "solution to BRC given by " + str((0,1,0)) + " or " + str((0,0,1)))
 
             # Easy solutions
             if sqrt(a).is_integer():
@@ -384,6 +420,7 @@ class residual_design(BIBD):
         self.blockstar = blockstar
         self.parameters = self.residual_params()
         BIBD.__init__(self, self.parameters)
+        self.is_residual = True
 
     def residual_params(self):
         '''
@@ -631,6 +668,15 @@ for v in range(50):
             try:
                 x = BIBD([v,k,lambduh])
                 if x.symmetric == True:
+                    exist = x.existence()
                     print(x.parameters, x.existence())
+                #if exist[0] == True:
+                #    truth += 1
+                #elif exist[0] == False:
+                #    false += 1
+                #elif exist[0] == 0.5:
+                #    maybe += 1
+                #if exist[0] == True or exist[0] == False:
+                #    print(x.parameters, exist)
             except AssertionError:
                 pass
