@@ -389,6 +389,8 @@ class BIBD():
                 # Giving up
                 else:
                     return (0.5, "try BRC?" + str(self.parameters) + "z^2 = " + str(a) + "x^2 + " + str(b) + "y^2")
+        else:
+            return (0.5, "maybe?")
 
 class derived_design(BIBD):
     def __init__(self, parent, blockstar):
