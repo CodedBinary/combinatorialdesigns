@@ -297,6 +297,8 @@ class BIBD():
             exist = y.existence()
             if exist[0] == True:
                 return (True, "Residual of: " + exist[1])
+            if self.lambduh < 3 and exist[0] == False:
+                return (False, "Quasiresidual designs of lambda < 3 are residual designs, but no residual exists: " + exist[1])
 
         if self.symmetric:
             x = self.residual()
