@@ -333,59 +333,60 @@ class BIBD():
         elif hadamard:
             return (True, "Hadamard design of order " + str(hadamard[0]) + ": Formed by Hadamard matrix of order " + str(4*hadamard[0]) + ": " + hadamard[1])
 
-        if self.v%2 == 0:
-            # The Bruck-Ryser-Chowla theorem states that, for v even, a (v,k,lambda) design exists, then
-            # (k-lambda) is a perfect square
-            if sqrt(a).is_integer():
-                return (0.5, str(self.k-self.lambduh) + " is a perfect square")
-            else:
-                return (False, "by BRC, " + str(self.k-self.lambduh) + " not perfect square")
+        if self.symmetric == True:
+            if self.v%2 == 0:
+                # The Bruck-Ryser-Chowla theorem states that, for v even, a (v,k,lambda) design exists, then
+                # (k-lambda) is a perfect square
+                if sqrt(a).is_integer():
+                    return (0.5, str(self.k-self.lambduh) + " is a perfect square")
+                else:
+                    return (False, "by BRC, " + str(self.k-self.lambduh) + " not perfect square")
 
-        elif self.v%2 == 1:
-            # The Bruck-Ryser-Chowla theorem states that if, for v odd, a (v,k,lambda) design exists, then
-            # z^2 = (k-lambda) x^2 + (-1)^((v-1)/2) lambda y^2 has a nontrivial solution
+            elif self.v%2 == 1:
+                # The Bruck-Ryser-Chowla theorem states that if, for v odd, a (v,k,lambda) design exists, then
+                # z^2 = (k-lambda) x^2 + (-1)^((v-1)/2) lambda y^2 has a nontrivial solution
 
 
-            # Let m be a factor appearing once in ab. Let c be b if m divides a, and a if b divides m. 
-            # If {x^2 | x in Z_m} cap {c*x^2 | x in Z_m} = {0}, then the equation z^2 = ax^2 + by^2
-            # has no solutions. Simply take both sides mod m, deduce two squares must be 0, and sub in.
-            if a*b != 0:
-                possiblem = [fact[0] for fact in factor(a*b) if fact[1]==1]
-                for m in possiblem:
-                    if m.divides(a):
-                        c = int(b)
-                    else:
-                        c = int(a)
+                # Let m be a factor appearing once in ab. Let c be b if m divides a, and a if b divides m. 
+                # If {x^2 | x in Z_m} cap {c*x^2 | x in Z_m} = {0}, then the equation z^2 = ax^2 + by^2
+                # has no solutions. Simply take both sides mod m, deduce two squares must be 0, and sub in.
+                if a*b != 0:
+                    possiblem = [fact[0] for fact in factor(a*b) if fact[1]==1]
+                    for m in possiblem:
+                        if m.divides(a):
+                            c = int(b)
+                        else:
+                            c = int(a)
 
-                    field = Integers(m)
-                    possiblez = set([i**2 for i in field]).intersection(set([c*i**2 for i in field]))
-                    if possiblez == {0}:
-                        return (False, "common divisibility argument mod " + str(m))
-            else:
-                return (0.5, "solution to BRC given by " + str((0,1,0)) + " or " + str((0,0,1)))
+                        field = Integers(m)
+                        possiblez = set([i**2 for i in field]).intersection(set([c*i**2 for i in field]))
+                        if possiblez == {0}:
+                            return (False, "common divisibility argument mod " + str(m))
+                else:
+                    return (0.5, "solution to BRC given by " + str((0,1,0)) + " or " + str((0,0,1)))
 
-            # Easy solutions
-            if sqrt(a).is_integer():
-                return (0.5, "solution to BRC given by " + str((sqrt(a), 1, 0)))
-            elif sqrt(self.lambduh).is_integer() and b>0:
-                return (0.5, "solution to BRC given by " + str((sqrt(self.lambduh), 0, 1)))
-            elif sqrt(a+b).is_integer():
-                return (0.5, "solution to BRC given by " + str((sqrt(a+b), 1, 1)))
-            elif a == 1 and b == 1:
-                return (0.5, "solution to BRC given by " + str((5,3,4)))
+                # Easy solutions
+                if sqrt(a).is_integer():
+                    return (0.5, "solution to BRC given by " + str((sqrt(a), 1, 0)))
+                elif sqrt(self.lambduh).is_integer() and b>0:
+                    return (0.5, "solution to BRC given by " + str((sqrt(self.lambduh), 0, 1)))
+                elif sqrt(a+b).is_integer():
+                    return (0.5, "solution to BRC given by " + str((sqrt(a+b), 1, 1)))
+                elif a == 1 and b == 1:
+                    return (0.5, "solution to BRC given by " + str((5,3,4)))
 
-            # If a=b=0 mod m and a/m = b/m != 0 mod m, we immediately know that z^2 = 0 mod m
-            # and then a/m x^2 + b/m y^2 = 0 mod m, which means a/m (x^2+y^2) = 0 mod m. For m=3,
-            # then x^2+y^2 in {0,1,2}, and since {x in Z_3 | exists c in Z_3\{0} : cx = 0} = {0},
-            # we know that x^2+y^2 in {0}, so we have a common divisibility argument.
-            elif a%3 == 0 and b%3 == 0 and (a/3)%3 == (b/3)%3 and ((a/3)%3 == 2 or (a/3)%3 == 1):
-                return (False, "common divisibility argument mod 3")
-            elif (a%4 == 0 and (a/4)%4 != 0 and (b%4 == 2 or b%4 == 3)) or (b%4 == 0 and (b/4)%4 != 0 and (a%4 == 2 or a%4 == 3)):
-                return (False, "common divisibility argument mod 4")
+                # If a=b=0 mod m and a/m = b/m != 0 mod m, we immediately know that z^2 = 0 mod m
+                # and then a/m x^2 + b/m y^2 = 0 mod m, which means a/m (x^2+y^2) = 0 mod m. For m=3,
+                # then x^2+y^2 in {0,1,2}, and since {x in Z_3 | exists c in Z_3\{0} : cx = 0} = {0},
+                # we know that x^2+y^2 in {0}, so we have a common divisibility argument.
+                elif a%3 == 0 and b%3 == 0 and (a/3)%3 == (b/3)%3 and ((a/3)%3 == 2 or (a/3)%3 == 1):
+                    return (False, "common divisibility argument mod 3")
+                elif (a%4 == 0 and (a/4)%4 != 0 and (b%4 == 2 or b%4 == 3)) or (b%4 == 0 and (b/4)%4 != 0 and (a%4 == 2 or a%4 == 3)):
+                    return (False, "common divisibility argument mod 4")
 
-            # Giving up
-            else:
-                return (0.5, "try BRC?" + str(self.parameters) + "z^2 = " + str(a) + "x^2 + " + str(b) + "y^2")
+                # Giving up
+                else:
+                    return (0.5, "try BRC?" + str(self.parameters) + "z^2 = " + str(a) + "x^2 + " + str(b) + "y^2")
 
 class derived_design(BIBD):
     def __init__(self, parent, blockstar):
@@ -665,19 +666,14 @@ def quad_residue_design(q):
 
 for v in range(50):
     for k in range(2,v):
-        for lambduh in range(1,5):
+        for lambduh in range(1,10):
             try:
                 x = BIBD([v,k,lambduh])
-                if x.symmetric == True:
-                    exist = x.existence()
-                    print(x.parameters, x.existence())
-                #if exist[0] == True:
-                #    truth += 1
-                #elif exist[0] == False:
-                #    false += 1
-                #elif exist[0] == 0.5:
-                #    maybe += 1
-                #if exist[0] == True or exist[0] == False:
-                #    print(x.parameters, exist)
+                #if x.symmetric == True:
+                #    exist = x.existence()
+                #    print(x.parameters, x.existence())
+                exist = x.existence()
+                if exist[0] == True or exist[0] == False:
+                    print(x.parameters, exist)
             except AssertionError:
                 pass
