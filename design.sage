@@ -94,6 +94,7 @@ class BIBD():
             if point == v.value:
                 return v
 
+    ### Creating new designs ###
     def derived_params(self):
         '''
         Calculates the parameters for the derived design. A derived design is the intersection of all
@@ -142,13 +143,24 @@ class BIBD():
     def complement(self):
         return complement_design(self)
 
+    def multiple(self, n):
+        return multiple_design(self, n)
+
+    ### Bijection ###
     def biject_obvious(self):
         '''
         Finds a bijection from the current set of points to a subset of the integers
         '''
         for i in range(len(self.V)):
             self.V[i].value = i
+    
+    def decouple_points(self):
+        self.V = [designpoint(point.value) for point in self.parent.V]
+        for block in self.blocks:
+            for i in range(len(block.elements)):
+                block.elements[i] = self.pointinV(block.elements[i].value)
 
+    ### Listing information ###
     def list_points(self):
         '''
             Returns the points of a design, in list form
@@ -167,12 +179,8 @@ class BIBD():
         '''
         return [[[point.value for point in block.elements] for block in resolclass] for resolclass in self.resolutionclasses]
 
-    def decouple_points(self):
-        self.V = [designpoint(point.value) for point in self.parent.V]
-        for block in self.blocks:
-            for i in range(len(block.elements)):
-                block.elements[i] = self.pointinV(block.elements[i].value)
 
+    ### Basic existence methods ###
     def exists_Hadamard_matrix(self, n):
         if n == 0:
             return (False, "Trivially")
@@ -264,6 +272,7 @@ class BIBD():
             if self.k == (self.v-1)/2 and self.lambduh == (self.v-3)/4:
                 return self.v
     
+    ### Complicated existence methods
     def existence(self):
         '''
         Checks if a design can be constructed as a constructible complement or derived or multiple design
@@ -392,6 +401,7 @@ class BIBD():
         else:
             return (0.5, "maybe?")
 
+### Classes for creating new designs from old ones ###
 class derived_design(BIBD):
     def __init__(self, parent, blockstar):
         self.parent = parent
@@ -478,6 +488,19 @@ class complement_design(BIBD):
         self.V = [i for i in points]
         self.blocks = [pointset.setminus(block) for block in iteratelist]
 
+class multiple_design(BIBD):
+    def __init__(self, parent, n):
+        self.parent = parent
+        self.parameters = [parent.v, parent.k, parent.lambduh * n]
+        self.n = n
+        BIBD.__init__(self, self.parameters)
+
+    def generate(self):
+        self.V = self.parent.V
+        self.blocks = [i for i in self.parent.blocks]
+        self.blocks = self.blocks * self.n
+
+### Classes for creating new designs ###
 class AG(BIBD):
     '''
     An affine geometry of order n over F_q. An affine geometry is the set of all d-flats of an n dimensional vector space over F_q. And a d-flat is a coset of a d-dimensional subspace. An example of an infinite affine geometry (which this program is not concerned with) is the set of all lines in a 3 dimensional space. Or the set of all planes. A line or plane through the origin is a 1 or 2 dimensional subspace, and a general line or plane is a translated version of that, so a coset. The points of the affine geometry are just the 0-flats.
@@ -589,13 +612,6 @@ class PG(BIBD):
         
         # Make sure to trim off the identity element
         self.blocks = [self.projection([i for i in subspace][1:]) for subspace in V.subspaces(self.d+1)]
-        #for projection in projections:
-        #    block = []
-        #    for space in projection:
-        #        if space not in block:
-        #            block += [space]
-        #    blocks += [block]
-        #self.blocks = [designblock([[elem for elem in space] for space in block if space.dimension() != 0]) for block in blocks]
 
     def generate_hyperplanes(self):
         '''
@@ -667,17 +683,3 @@ def quad_residue_diff_set(q):
 
 def quad_residue_design(q):
     return difference_method([quad_residue_diff_set(q)],q)
-
-for v in range(50):
-    for k in range(2,v):
-        for lambduh in range(1,10):
-            try:
-                x = BIBD([v,k,lambduh])
-                #if x.symmetric == True:
-                #    exist = x.existence()
-                #    print(x.parameters, x.existence())
-                exist = x.existence()
-                if exist[0] == True or exist[0] == False:
-                    print(x.parameters, exist)
-            except AssertionError:
-                pass
