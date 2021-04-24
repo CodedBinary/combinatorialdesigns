@@ -51,6 +51,16 @@ class designblock():
     def intersection(self, block):
         return designblock([i for i in self.elements if i in block.elements])
 
+class existinfo():
+    '''
+    Wrapper to hold existence information
+    '''
+    def __init__(self, exist=0.5, method = "", parameters=[], message=""):
+        self.exist = exist
+        self.method = method
+        self.parameters = parameters
+        self.message = message
+
 class BIBD():
     '''
     Balanced incomplete block design. A balanced incomplete block design is formed from a set of points V
@@ -73,6 +83,7 @@ class BIBD():
             self.calculate_extra_parameters()
             self.is_complement = False
             self.is_residual = False
+            self.is_residual_inverse = False
         
 
     def calculate_extra_parameters(self):
@@ -183,59 +194,66 @@ class BIBD():
     ### Basic existence methods ###
     def exists_Hadamard_matrix(self, n):
         if n == 0:
-            return (False, "Trivially")
+            exist = existinfo(exist=False, message="Trivially")
+            return exist
 
         if n == 2:
-            return (True, "Hadamard matrix of order 2 exists")
+            exist = existinfo(exist=True, message="Hadamard matrix of order 2 exists")
+            return exist
 
         if n%4 != 0:
-            return (False, "Hadamard matrix order not divisible by 4")
+            exist = existinfo(exist=False, message = "Hadamard matrix order not divisible by 4")
+            return exist
 
         if is_prime_power(n-1) and (n-1)%4 == 3:
-            return (True, str(n-1) + " is prime power 3 mod 4")
+            exist = existinfo(exist=True, message = str(n-1) + " is prime power 3 mod 4")
+            return exist
 
         if n%2 == 0:
             exist = self.exists_Hadamard_matrix(n/2)
-            if exist[0] == True:
-                return (True, str("times 2, ") + exist[1])
+            if exist.exist == True:
+                exist2 = existinfo(exist=True, message = str("times 2, ") + exist.message)
+                return exist2
         
         if n%4 == 0:
             for divisor1 in divisors(n/4):
                 divisor2 = n/(4*divisor1)
                 exist1 = self.exists_Hadamard_matrix(divisor1)
                 exist2 = self.exists_Hadamard_matrix(divisor2)
-                if exist1[0] == True and exist2[0] == True:
-                    return (True, str("Formed from: ") + exist1[1] + ", and " + exist2[1])
+                if exist1.exist == True and exist2.exist == True:
+                    exist = existinfo(exist=True, message = str("Formed from: ") + exist1[1] + ", and " + exist2[1])
+                    return exist
 
-        return (0.5, "Tried everything")
+        exist = existinfo(message = "Tried everything")
+        return exist
 
     def permits_Hadamard_design(self):
         n = self.k - self.lambduh
         exist = self.exists_Hadamard_matrix(4*n)
-        if exist[0] == True:
+        if exist.exist == True:
             if self.v == 4*n-1 and self.k == 2*n-1 and self.lambduh == n-1:
-                return (n, exist[1])
-        else:
-            return False
+                exist2 = existinfo(exist=True, message=exist.message, parameters = [n])
+                return exist2
+        return existinfo(exist=False)
 
     def permits_AG(self):
         if is_prime_power(self.v):
             p1, alpha1 = is_prime_power(self.v, get_data=True)
         else:
-            return False
+            return existinfo(exist=False)
 
         if is_prime_power(self.k):
             p2, alpha2 = is_prime_power(self.k, get_data=True)
         else:
-            return False
+            return existinfo(exist=False)
 
         if p1 != p2:
-            return False
+            return existinfo(exist=False)
         maximalq = gcd(alpha1, alpha2)
         for divisor in maximalq.divisors():
             if binom(alpha1/divisor - 1, alpha2/divisor-1, p1**divisor) == self.lambduh:
-                return (alpha1/divisor, p1**divisor, alpha2/divisor)
-        return False
+                return existinfo(exist=True, parameters = [alpha1/divisor, p1**divisor, alpha2/divisor])
+        return existinfo(exist=False)
 
     def permits_PG(self):
         '''
@@ -264,13 +282,15 @@ class BIBD():
         for n, primepower, cumulativeresults in possiblesols:
             if self.k in cumulativeresults:
                 if binom(n-1,cumulativeresults.index(self.k)-1,primepower) == self.lambduh:
-                    return (n,primepower,cumulativeresults.index(self.k))
-        return False
+                    return existinfo(exist=True, parameters = [n,primepower,cumulativeresults.index(self.k)])
+        return existinfo(exist=False)
          
     def permits_quad_residue(self):
         if is_prime_power(self.v):
             if self.k == (self.v-1)/2 and self.lambduh == (self.v-3)/4:
-                return self.v
+                return existinfo(exist=True, parameters = [self.v])
+
+        return existinfo(exist = False)
     
     ### Complicated existence methods
     def existence(self):
@@ -278,45 +298,48 @@ class BIBD():
         Checks if a design can be constructed as a constructible complement or derived or multiple design
         '''
 
-        if self.existence_basic()[0] == True:
-            return (True, self.existence_basic()[1])
+        basicexistence = self.existence_basic()
+        if basicexistence.exist == True:
+            return existinfo(exist=True, message = basicexistence.message)
 
-        if self.existence_basic()[0] == False:
-            return (False, self.existence_basic()[1])
+        if basicexistence.exist == False:
+            return existinfo(False, message = basicexistence.message)
 
         for possiblelambduh in divisors(self.lambduh):
             if possiblelambduh != self.lambduh:
                 try:
                     x = BIBD([self.v,self.k,possiblelambduh])
                     exist = x.existence()
-                    if exist[0] == True:
-                        return (True, "Multiply by " + str(self.lambduh/possiblelambduh) + ": " + exist[1])
+                    if exist.exist == True:
+                        return existinfo(exist=True, message = "Multiply by " + str(self.lambduh/possiblelambduh) + ": " + exist.message)
                 except AssertionError:
                     pass
 
-        if self.is_complement == False:
+        if self.is_complement == False and self.v - self.k > 1:
             y = self.complement()
             y.is_complement = True
             exist = y.existence()
-            if exist[0] == True:
-                return (True, "Complement of: " + exist[1])
+            if exist.exist == True:
+                return existinfo(exist=True, message = "Complement of: " + exist.message)
 
         if self.r == self.k + self.lambduh and self.is_residual == False:
             y = self.residual_inverse()
+            y.is_residual_inverse = True
             exist = y.existence()
-            if exist[0] == True:
-                return (True, "Residual of: " + exist[1])
-            if self.lambduh < 3 and exist[0] == False:
-                return (False, "Quasiresidual designs of lambda < 3 are residual designs, but no residual exists: " + exist[1])
+            if exist.exist == True:
+                return existinfo(exist=True, message = "Residual of: " + exist.message)
+            if self.lambduh < 3 and exist.exist == False:
+                return existinfo(exist=False, message = "Quasiresidual designs of lambda < 3 are residual designs, but no residual exists: " + exist.message)
 
-        if self.symmetric:
+        if self.symmetric and self.is_residual_inverse == False and self.k - self.lambduh > 1:
             x = self.residual()
+            x.is_residual = True
             if x.lambduh < 3:
                 exist = x.existence()
-                if exist[0] == True:
-                    return (True, "Quasiresidual design: " + str(x.parameters) + exist[1])
+                if exist.exist == True:
+                    return existinfo(exist=True, message = "Quasiresidual design: " + str(x.parameters) + exist.message)
 
-        return (0.5, "Maybe")
+        return existinfo(exist=0.5, message = "Maybe")
 
     def existence_basic(self):
         '''
@@ -327,31 +350,31 @@ class BIBD():
 
         hadamard = self.permits_Hadamard_design()
         if self.b < self.v:
-            return (False, "Violates Fischer's Inequality")
+            return existinfo(exist = False, message = "Violates Fischer's Inequality")
 
         elif self.k == self.v - 1 and self.lambduh == self.v - 2:
-            return (True, "Trivial case")
+            return existinfo(exist=True, message = "Trivial case")
 
-        elif self.permits_quad_residue():
-            return (True, "Quadratic Residue " + str(self.permits_quad_residue()))
+        elif self.permits_quad_residue().exist:
+            return existinfo(exist=True, message = "Quadratic Residue " + str(self.permits_quad_residue().parameters))
 
-        elif self.permits_AG():
-            return (True, "Affine geometry " + str(self.permits_AG()))
+        elif self.permits_AG().exist:
+            return existinfo(exist=True, message = "Affine geometry " + str(self.permits_AG().parameters))
 
-        elif self.permits_PG():
-            return (True, "Projective geometry " + str(self.permits_PG()))
+        elif self.permits_PG().exist:
+            return existinfo(exist=True, message = "Projective geometry " + str(self.permits_PG().parameters))
 
-        elif hadamard:
-            return (True, "Hadamard design of order " + str(hadamard[0]) + ": Formed by Hadamard matrix of order " + str(4*hadamard[0]) + ": " + hadamard[1])
+        elif hadamard.exist:
+            return existinfo(exist=True, message = "Hadamard design of order " + str(hadamard[0]) + ": Formed by Hadamard matrix of order " + str(4*hadamard[0]) + ": " + hadamard[1])
 
         if self.symmetric == True:
             if self.v%2 == 0:
                 # The Bruck-Ryser-Chowla theorem states that, for v even, a (v,k,lambda) design exists, then
                 # (k-lambda) is a perfect square
                 if sqrt(a).is_integer():
-                    return (0.5, str(self.k-self.lambduh) + " is a perfect square")
+                    return existinfo(exist=0.5, message = str(self.k-self.lambduh) + " is a perfect square")
                 else:
-                    return (False, "by BRC, " + str(self.k-self.lambduh) + " not perfect square")
+                    return existinfo(exist=False, message = "by BRC, " + str(self.k-self.lambduh) + " not perfect square")
 
             elif self.v%2 == 1:
                 # The Bruck-Ryser-Chowla theorem states that if, for v odd, a (v,k,lambda) design exists, then
@@ -372,34 +395,34 @@ class BIBD():
                         field = Integers(m)
                         possiblez = set([i**2 for i in field]).intersection(set([c*i**2 for i in field]))
                         if possiblez == {0}:
-                            return (False, "common divisibility argument mod " + str(m))
+                            return existinfo(exist=False, message = "common divisibility argument mod " + str(m))
                 else:
-                    return (0.5, "solution to BRC given by " + str((0,1,0)) + " or " + str((0,0,1)))
+                    return existinfo(exist=0.5, message = "solution to BRC given by " + str((0,1,0)) + " or " + str((0,0,1)))
 
                 # Easy solutions
                 if sqrt(a).is_integer():
-                    return (0.5, "solution to BRC given by " + str((sqrt(a), 1, 0)))
+                    return existinfo(exist=0.5, message = "solution to BRC given by " + str((sqrt(a), 1, 0)))
                 elif sqrt(self.lambduh).is_integer() and b>0:
-                    return (0.5, "solution to BRC given by " + str((sqrt(self.lambduh), 0, 1)))
+                    return existinfo(exist=0.5, message = "solution to BRC given by " + str((sqrt(self.lambduh), 0, 1)))
                 elif sqrt(a+b).is_integer():
-                    return (0.5, "solution to BRC given by " + str((sqrt(a+b), 1, 1)))
+                    return existinfo(exist=0.5, message = "solution to BRC given by " + str((sqrt(a+b), 1, 1)))
                 elif a == 1 and b == 1:
-                    return (0.5, "solution to BRC given by " + str((5,3,4)))
+                    return existinfo(exist=0.5, message = "solution to BRC given by " + str((5,3,4)))
 
                 # If a=b=0 mod m and a/m = b/m != 0 mod m, we immediately know that z^2 = 0 mod m
                 # and then a/m x^2 + b/m y^2 = 0 mod m, which means a/m (x^2+y^2) = 0 mod m. For m=3,
                 # then x^2+y^2 in {0,1,2}, and since {x in Z_3 | exists c in Z_3\{0} : cx = 0} = {0},
                 # we know that x^2+y^2 in {0}, so we have a common divisibility argument.
                 elif a%3 == 0 and b%3 == 0 and (a/3)%3 == (b/3)%3 and ((a/3)%3 == 2 or (a/3)%3 == 1):
-                    return (False, "common divisibility argument mod 3")
+                    return existinfo(exist=False, message = "common divisibility argument mod 3")
                 elif (a%4 == 0 and (a/4)%4 != 0 and (b%4 == 2 or b%4 == 3)) or (b%4 == 0 and (b/4)%4 != 0 and (a%4 == 2 or a%4 == 3)):
-                    return (False, "common divisibility argument mod 4")
+                    return existinfo(exist=False, message = "common divisibility argument mod 4")
 
                 # Giving up
                 else:
-                    return (0.5, "try BRC?" + str(self.parameters) + "z^2 = " + str(a) + "x^2 + " + str(b) + "y^2")
+                    return existinfo(exist=0.5, message = "try BRC?" + str(self.parameters) + "z^2 = " + str(a) + "x^2 + " + str(b) + "y^2")
         else:
-            return (0.5, "maybe?")
+            return existinfo(exist=0.5, message = "maybe?")
 
 ### Classes for creating new designs from old ones ###
 class derived_design(BIBD):
@@ -683,3 +706,13 @@ def quad_residue_diff_set(q):
 
 def quad_residue_design(q):
     return difference_method([quad_residue_diff_set(q)],q)
+
+for v in range(5,20):
+    for k in range(3,v):
+        for lambduh in range(1,5):
+            try:
+                x = BIBD([v,k,lambduh])
+                exist = x.existence()
+                print(x.parameters, exist.exist, exist.message)
+            except AssertionError:
+                pass
