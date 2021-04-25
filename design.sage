@@ -216,8 +216,8 @@ class BIBD():
                 return exist2
         
         if n%4 == 0:
-            for divisor1 in divisors(n/4):
-                divisor2 = n/(4*divisor1)
+            for divisor1 in divisors(n):
+                divisor2 = n/(divisor1)
                 exist1 = self.exists_Hadamard_matrix(divisor1)
                 exist2 = self.exists_Hadamard_matrix(divisor2)
                 if exist1.exist == True and exist2.exist == True:
@@ -252,7 +252,7 @@ class BIBD():
         maximalq = gcd(alpha1, alpha2)
         for divisor in maximalq.divisors():
             if binom(alpha1/divisor - 1, alpha2/divisor-1, p1**divisor) == self.lambduh:
-                return existinfo(exist=True, parameters = [alpha1/divisor, p1**divisor, alpha2/divisor])
+                return existinfo(exist=True, parameters = [alpha1/divisor, p1**divisor, alpha2/divisor], method=AG)
         return existinfo(exist=False)
 
     def permits_PG(self):
@@ -282,13 +282,13 @@ class BIBD():
         for n, primepower, cumulativeresults in possiblesols:
             if self.k in cumulativeresults:
                 if binom(n-1,cumulativeresults.index(self.k)-1,primepower) == self.lambduh:
-                    return existinfo(exist=True, parameters = [n,primepower,cumulativeresults.index(self.k)])
+                    return existinfo(exist=True, parameters = [n,primepower,cumulativeresults.index(self.k)], method=PG)
         return existinfo(exist=False)
          
     def permits_quad_residue(self):
         if is_prime_power(self.v):
             if self.k == (self.v-1)/2 and self.lambduh == (self.v-3)/4:
-                return existinfo(exist=True, parameters = [self.v])
+                return existinfo(exist=True, parameters = [self.v], method = quad_residue_design)
 
         return existinfo(exist = False)
     
