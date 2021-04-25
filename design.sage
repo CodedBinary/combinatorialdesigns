@@ -1,6 +1,7 @@
 ##!/usr/bin/env sage
-#from itertools import permutations
-#
+from itertools import permutations
+from itertools import combinations
+
 # TODO:
 # Verification of design ness
 # Affine Singer
@@ -198,7 +199,7 @@ class BIBD():
             return exist
 
         if n == 2:
-            exist = existinfo(exist=True, message="Hadamard matrix of order 2 exists")
+            exist = existinfo(exist=True, message="Hadamard matrix of order 2 exists", parameters = [2])
             return exist
 
         if n%4 != 0:
@@ -206,25 +207,26 @@ class BIBD():
             return exist
 
         if is_prime_power(n-1) and (n-1)%4 == 3:
-            exist = existinfo(exist=True, message = str(n-1) + " is prime power 3 mod 4")
+            exist = existinfo(exist=True, message = str(n-1) + " is prime power 3 mod 4", parameters = [n])
             return exist
 
-        if n%2 == 0:
-            exist = self.exists_Hadamard_matrix(n/2)
-            if exist.exist == True:
-                exist2 = existinfo(exist=True, message = str("times 2, ") + exist.message)
-                return exist2
+        #if n%2 == 0:
+        #    exist = self.exists_Hadamard_matrix(n/2)
+        #    if exist.exist == True:
+        #        exist2 = existinfo(exist=True, message = str("times 2, ") + exist.message)
+        #        return exist2
         
         if n%4 == 0:
             for divisor1 in divisors(n):
-                divisor2 = n/(divisor1)
-                exist1 = self.exists_Hadamard_matrix(divisor1)
-                exist2 = self.exists_Hadamard_matrix(divisor2)
-                if exist1.exist == True and exist2.exist == True:
-                    exist = existinfo(exist=True, message = str("Formed from: ") + exist1[1] + ", and " + exist2[1])
-                    return exist
+                if divisor1 != n and divisor1 != 1:
+                    divisor2 = n/(divisor1)
+                    exist1 = self.exists_Hadamard_matrix(divisor1)
+                    exist2 = self.exists_Hadamard_matrix(divisor2)
+                    if exist1.exist == True and exist2.exist == True:
+                        exist = existinfo(exist=True, message = str("Formed from:  Hadamard matrix order ") + str(exist1.parameters[0]) + ": " + exist1.message + ", and Hadamard matrix order " + str(exist2.parameters[0]) + ": "+ exist2.message)
+                        return exist
 
-        exist = existinfo(message = "Tried everything")
+        exist = existinfo(exist = 0.5, message = "Tried everything")
         return exist
 
     def permits_Hadamard_design(self):
@@ -365,7 +367,7 @@ class BIBD():
             return existinfo(exist=True, message = "Projective geometry " + str(self.permits_PG().parameters))
 
         elif hadamard.exist:
-            return existinfo(exist=True, message = "Hadamard design of order " + str(hadamard[0]) + ": Formed by Hadamard matrix of order " + str(4*hadamard[0]) + ": " + hadamard[1])
+            return existinfo(exist=True, message = "Hadamard design of order " + str(hadamard.parameters[0]) + ": Formed by Hadamard matrix of order " + str(4*hadamard.parameters[0]) + ": " + hadamard.message)
 
         if self.symmetric == True:
             if self.v%2 == 0:
@@ -695,6 +697,56 @@ class difference_method(BIBD):
         else:
             self.blocks = [designblock(theset) for theset in sets]
 
+class Hadamard_matrix():
+    def __init__(self, m):
+        assert m%4 == 0, "Hadamard matrices have order divisible by 4"
+        self.order = m
+
+    def incidence(self, design, i, j):
+        blocks = design.blocks
+        points = design.V
+        if points[i] in blocks[j].elements:
+            return 1
+        else:
+            return -1
+
+    def generate(self):
+        # We want to generate a Hadamard design of order n=m/4
+        if self.order == 2:
+            matrix = [[1,1],[1,-1]]
+            self.matrix = matrix
+
+        elif self.order == 4:
+            matrix = [[1,1,1,1],[1,1,-1,-1],[1,-1,1,-1],[1,-1,-1,1]]
+            self.matrix = matrix
+
+        else:
+            q = self.order-1
+            assert is_prime_power(q), "Invalid order"
+            design = quad_residue_design(q)
+            design.generate()
+            matrix = [[self.incidence(design, i, j) for j in range(design.v)] for i in range(design.v)]
+            matrix = [[1]+i for i in matrix]
+            matrix = [[1 for i in range(len(matrix)+1)]] + matrix
+            self.matrix = matrix
+
+    def multiply(self, matrix):
+        order = self.order*matrix.order
+        matrix = matrix.matrix
+        product = Hadamard_matrix(order)
+        # *retch*
+        product.matrix = [[matrix[floor(i/self.order)][floor(j/self.order)]*self.matrix[i-self.order*floor(i/self.order)][j-self.order*floor(j/self.order)] for j in range(order)] for i in range(order)]
+        return product
+
+    def verify(self):
+        for i,j in combinations(range(self.order), int(2)):
+            row1 = self.matrix[i]
+            row2 = self.matrix[j]
+            dot = [row1[i]*row2[i] for i in range(len(row1))]
+            if sum(dot) != 0:
+                print("NO", i, j)
+        
+
 def quad_residue_diff_set(q):
     if q%4 == 3:
         pass
@@ -707,12 +759,12 @@ def quad_residue_diff_set(q):
 def quad_residue_design(q):
     return difference_method([quad_residue_diff_set(q)],q)
 
-for v in range(5,20):
-    for k in range(3,v):
-        for lambduh in range(1,5):
-            try:
-                x = BIBD([v,k,lambduh])
-                exist = x.existence()
-                print(x.parameters, exist.exist, exist.message)
-            except AssertionError:
-                pass
+#for v in range(5,20):
+#    for k in range(3,v):
+#        for lambduh in range(1,5):
+#            try:
+#                x = BIBD([v,k,lambduh])
+#                exist = x.existence()
+#                print(x.parameters, exist.exist, exist.message)
+#            except AssertionError:
+#                pass
