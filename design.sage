@@ -12,6 +12,7 @@ from itertools import combinations
 # Speed up PG.generate() and other timing based stuff
 # Fix PG.generate_hyperplanes for prime power
 # Generate designs that exist
+# Learn about **kwargs and *args
 
 def binom(n,r,q):
     '''
@@ -56,11 +57,12 @@ class existinfo():
     '''
     Wrapper to hold existence information
     '''
-    def __init__(self, exist=0.5, method = "", parameters=[], message=""):
+    def __init__(self, exist=0.5, methods = [], parameters=[], kwparameters = {}, message=""):
         self.exist = exist
-        self.method = method
+        self.methods = methods
         self.parameters = parameters
         self.message = message
+        self.kwparameters = kwparameters
 
 class BIBD():
     '''
@@ -199,7 +201,7 @@ class BIBD():
             return exist
 
         if n == 2:
-            exist = existinfo(exist=True, message="Hadamard matrix of order 2 exists", parameters = [2])
+            exist = existinfo(exist=True, message="Hadamard matrix of order 2 exists", parameters = [[2]], methods = [Hadamard_matrix])
             return exist
 
         if n%4 != 0:
@@ -207,14 +209,8 @@ class BIBD():
             return exist
 
         if is_prime_power(n-1) and (n-1)%4 == 3:
-            exist = existinfo(exist=True, message = str(n-1) + " is prime power 3 mod 4", parameters = [n])
+            exist = existinfo(exist=True, message = str(n-1) + " is prime power 3 mod 4", parameters = [[n]], methods = [Hadamard_matrix])
             return exist
-
-        #if n%2 == 0:
-        #    exist = self.exists_Hadamard_matrix(n/2)
-        #    if exist.exist == True:
-        #        exist2 = existinfo(exist=True, message = str("times 2, ") + exist.message)
-        #        return exist2
         
         if n%4 == 0:
             for divisor1 in divisors(n):
@@ -223,7 +219,13 @@ class BIBD():
                     exist1 = self.exists_Hadamard_matrix(divisor1)
                     exist2 = self.exists_Hadamard_matrix(divisor2)
                     if exist1.exist == True and exist2.exist == True:
-                        exist = existinfo(exist=True, message = str("Formed from:  Hadamard matrix order ") + str(exist1.parameters[0]) + ": " + exist1.message + ", and Hadamard matrix order " + str(exist2.parameters[0]) + ": "+ exist2.message)
+                        parent1 = Hadamard_matrix(divisor1, **exist1.kwparameters)
+                        parent2 = Hadamard_matrix(divisor2, **exist2.kwparameters)
+                        exist = existinfo(exist=True, 
+                                message = str("Formed from:  Hadamard matrix order ") + str(exist1.parameters[0]) + ": " + exist1.message + ", and Hadamard matrix order " + str(exist2.parameters[0]) + ": " + exist2.message, 
+                                methods = [Hadamard_matrix.multiply], 
+                                parameters = [[n]],
+                                kwparameters = {"parents": [parent1, parent2]})
                         return exist
 
         exist = existinfo(exist = 0.5, message = "Tried everything")
@@ -234,7 +236,7 @@ class BIBD():
         exist = self.exists_Hadamard_matrix(4*n)
         if exist.exist == True:
             if self.v == 4*n-1 and self.k == 2*n-1 and self.lambduh == n-1:
-                exist2 = existinfo(exist=True, message=exist.message, parameters = [n])
+                exist2 = existinfo(exist=True, message = "Hadamard design of order " + str(n) + " formed by Hadamard matrix of order " + str(4*n) + ": " + exist.message, parameters = [[n]], methods = exist.methods + [Hadamard_matrix.design])
                 return exist2
         return existinfo(exist=False)
 
@@ -254,7 +256,8 @@ class BIBD():
         maximalq = gcd(alpha1, alpha2)
         for divisor in maximalq.divisors():
             if binom(alpha1/divisor - 1, alpha2/divisor-1, p1**divisor) == self.lambduh:
-                return existinfo(exist=True, parameters = [alpha1/divisor, p1**divisor, alpha2/divisor], method=AG)
+                params = [alpha1/divisor, p1**divisor, alpha2/divisor]
+                return existinfo(exist=True, parameters = [params], methods=[AG], message = "Affine geometry " + str(params))
         return existinfo(exist=False)
 
     def permits_PG(self):
@@ -284,13 +287,15 @@ class BIBD():
         for n, primepower, cumulativeresults in possiblesols:
             if self.k in cumulativeresults:
                 if binom(n-1,cumulativeresults.index(self.k)-1,primepower) == self.lambduh:
-                    return existinfo(exist=True, parameters = [n,primepower,cumulativeresults.index(self.k)], method=PG)
+                    params = [n,primepower,cumulativeresults.index(self.k)]
+                    return existinfo(exist=True, parameters = [params], methods=[PG], message = "Projective geometry " + str(params))
         return existinfo(exist=False)
          
     def permits_quad_residue(self):
         if is_prime_power(self.v):
             if self.k == (self.v-1)/2 and self.lambduh == (self.v-3)/4:
-                return existinfo(exist=True, parameters = [self.v], method = quad_residue_design)
+                params = [self.v]
+                return existinfo(exist=True, parameters = [params], methods = [quad_residue_design], message = "Quadratic Residue " + str(params[0]))
 
         return existinfo(exist = False)
     
@@ -302,10 +307,10 @@ class BIBD():
 
         basicexistence = self.existence_basic()
         if basicexistence.exist == True:
-            return existinfo(exist=True, message = basicexistence.message)
+            return basicexistence
 
         if basicexistence.exist == False:
-            return existinfo(False, message = basicexistence.message)
+            return basicexistence
 
         for possiblelambduh in divisors(self.lambduh):
             if possiblelambduh != self.lambduh:
@@ -322,14 +327,14 @@ class BIBD():
             y.is_complement = True
             exist = y.existence()
             if exist.exist == True:
-                return existinfo(exist=True, message = "Complement of: " + exist.message)
+                return existinfo(exist=True, message = "Complement of: " + exist.message, methods = exist.methods + [BIBD.complement], parameters = exist.parameters + [[]])
 
         if self.r == self.k + self.lambduh and self.is_residual == False:
             y = self.residual_inverse()
             y.is_residual_inverse = True
             exist = y.existence()
             if exist.exist == True:
-                return existinfo(exist=True, message = "Residual of: " + exist.message)
+                return existinfo(exist=True, message = "Residual of: " + exist.message, methods = exist.methods + [BIBD.residual], parameters = exist.parameters + [[]])
             if self.lambduh < 3 and exist.exist == False:
                 return existinfo(exist=False, message = "Quasiresidual designs of lambda < 3 are residual designs, but no residual exists: " + exist.message)
 
@@ -350,24 +355,28 @@ class BIBD():
         a = self.k - self.lambduh
         b = (-1)**((self.v-1)/2)* self.lambduh
 
-        hadamard = self.permits_Hadamard_design()
+        exist_hadamard_design = self.permits_Hadamard_design()
+        exist_quadresidue = self.permits_quad_residue()
+        exist_affinegeometry = self.permits_AG()
+        exist_projectivegeometry = self.permits_PG()
+
         if self.b < self.v:
             return existinfo(exist = False, message = "Violates Fischer's Inequality")
 
         elif self.k == self.v - 1 and self.lambduh == self.v - 2:
             return existinfo(exist=True, message = "Trivial case")
 
-        elif self.permits_quad_residue().exist:
-            return existinfo(exist=True, message = "Quadratic Residue " + str(self.permits_quad_residue().parameters))
+        elif exist_quadresidue.exist:
+            return exist_quadresidue
 
-        elif self.permits_AG().exist:
-            return existinfo(exist=True, message = "Affine geometry " + str(self.permits_AG().parameters))
+        elif exist_affinegeometry.exist:
+            return exist_affinegeometry
 
-        elif self.permits_PG().exist:
-            return existinfo(exist=True, message = "Projective geometry " + str(self.permits_PG().parameters))
+        elif exist_projectivegeometry.exist:
+            return exist_projectivegeometry
 
-        elif hadamard.exist:
-            return existinfo(exist=True, message = "Hadamard design of order " + str(hadamard.parameters[0]) + ": Formed by Hadamard matrix of order " + str(4*hadamard.parameters[0]) + ": " + hadamard.message)
+        elif exist_hadamard_design.exist:
+            return exist_hadamard_design
 
         if self.symmetric == True:
             if self.v%2 == 0:
@@ -698,9 +707,11 @@ class difference_method(BIBD):
             self.blocks = [designblock(theset) for theset in sets]
 
 class Hadamard_matrix():
-    def __init__(self, m):
-        assert m%4 == 0, "Hadamard matrices have order divisible by 4"
+    def __init__(self, m, parents=[]):
+        # Note that the "parent matrices" are actually 2 smaller matrices
+        assert m%4 == 0 or m == 2, "Hadamard matrices have order divisible by 4 or are 2"
         self.order = m
+        self.parents = parents
 
     def incidence(self, design, i, j):
         blocks = design.blocks
@@ -711,6 +722,17 @@ class Hadamard_matrix():
             return -1
 
     def generate(self):
+        if self.parents == []:
+            self.generate_basic()
+        else:
+            parents = self.parents
+            matrix1 = parents[0]
+            matrix1.generate()
+            matrix2 = parents[1]
+            matrix2.generate()
+            self.matrix = matrix1.multiply(matrix2).matrix
+
+    def generate_basic(self):
         # We want to generate a Hadamard design of order n=m/4
         if self.order == 2:
             matrix = [[1,1],[1,-1]]
@@ -729,6 +751,12 @@ class Hadamard_matrix():
             matrix = [[1]+i for i in matrix]
             matrix = [[1 for i in range(len(matrix)+1)]] + matrix
             self.matrix = matrix
+
+    def design(self):
+        x = BIBD([self.order-1, self.order/2-1, self.order/4-1])
+        x.V = [designpoint(i) for i in range(1, self.order)]
+        x.blocks = [designblock([BIBD.pointinV(x, i) for i in range(1,len(self.matrix[j])) if self.matrix[j][i] == 1]) for j in range(1,self.order)]
+        return x
 
     def multiply(self, matrix):
         order = self.order*matrix.order
@@ -757,7 +785,9 @@ def quad_residue_diff_set(q):
     return residues
 
 def quad_residue_design(q):
-    return difference_method([quad_residue_diff_set(q)],q)
+    x = difference_method([quad_residue_diff_set(q)], q, check=False)
+    BIBD.__init__(x, [q, (q-1)/2, (q-3)/4])
+    return x
 
 #for v in range(5,20):
 #    for k in range(3,v):
@@ -768,3 +798,7 @@ def quad_residue_design(q):
 #                print(x.parameters, exist.exist, exist.message)
 #            except AssertionError:
 #                pass
+
+x = BIBD([7,3,1])
+exist = x.exists_Hadamard_matrix(2080)
+matrix = Hadamard_matrix(exist.parameters[0][0], **exist.kwparameters)
