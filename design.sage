@@ -12,11 +12,19 @@ from itertools import combinations
 # Speed up PG.generate() and other timing based stuff
 # Fix PG.generate_hyperplanes for prime power
 # Generate designs that exist
-# Learn about **kwargs and *args
+# Make residual and derived designs fail gracefully if nonsensical
 
 def binom(n,r,q):
     '''
     Computes the Gaussian binomial coefficient (n r)_q. This happens to be the number of r dimensional subspaces of an n dimensional vector space over the finite field F_q.
+
+    Inputs:
+    n   (int):  Dimension of vector space
+    r   (int):  Dimension of subspace
+    q   (int):  Order of field. Must be prime power.
+
+    Outputs:
+        (int):  Gaussian binomial coefficient
     '''
     if n == r:
         return 1
@@ -79,6 +87,13 @@ class BIBD():
     has any two elements of V (for instance, 2 and 5) occurring in exactly one block ({2,3,5}).
     '''
     def __init__(self, parameters):
+        '''
+        Inputs:
+        parameters  (list): list containing exactly 3 elements; v, k and lambduh of the design.
+            v   (int):          the number of points of the design
+            k   (int):          the block length of the design
+            lambduh (int):      the incidence number of the design. That is, how many blocks a given pair coincides in.
+        '''
         if parameters != []:
             self.parameters = parameters
             self.v, self.k, self.lambduh = (int(parameters[0]), int(parameters[1]), int(parameters[2]))
@@ -90,6 +105,13 @@ class BIBD():
         
 
     def calculate_extra_parameters(self):
+        '''
+        Calculates additional parameters that can be derived from the basic (v,k,lambda) parameters of the design
+
+        Calculates:
+            b   (int):      the number of blocks of the design
+            r   (int):      the replication number of the design. In other words, how many times any point occurs.
+        '''
         self.parameters = (self.v, self.k, self.lambduh)
         self.b = self.lambduh * self.v * (self.v-1)/(self.k*(self.k-1))
         self.r = self.lambduh * (self.v-1)/(self.k-1)
@@ -103,6 +125,12 @@ class BIBD():
     def pointinV(self, point):
         '''
         Returns the point object in the set of the designs points with the given value.
+
+        Inputs:
+            point   (?): Value of a point of a design
+
+        Outputs:
+            v       (designpoint):  Point object of the design
         '''
         for v in self.V:
             if point == v.value:
@@ -111,64 +139,125 @@ class BIBD():
     ### Creating new designs ###
     def derived_params(self):
         '''
-        Calculates the parameters for the derived design. A derived design is the intersection of all
-        blocks with respect to some fixed block of the design. Only a design if symmetric.
+        Calculates the parameters for the derived design. See BIBD.derived.
+
+        Outputs:
+            parameters (see BIBD.__init__)
         '''
         if self.symmetric == True and self.lambduh > 1:
             return [self.k, self.lambduh, self.lambduh - 1]
 
     def derived_inverse_params(self):
+        '''
+        Calculates the parameters for the design such that its derived design is self. 
+
+        Outputs:
+            parameters  (list): See BIBD.__init__
+        '''
         x = self.complement()
         x = x.residual()
         x = x.complement()
         return x.parameters
 
     def derived(self, blockstar=-1):
+        '''
+        Returns the derived design of self. A derived design is the intersection of all
+        blocks with respect to some fixed block of the design. Only a design if symmetric.
+
+        Outputs:
+            derived design      (derived_design): Derived design of self
+        '''
         return derived_design(self, blockstar)
 
     def derived_inverse(self):
+        '''
+        Returns the design such that its derived design is self. Will fail if it does not exist.
+
+        Outputs:
+            inverse derived design  (BIBD): Design whose derived is self
+        '''
         return BIBD([derived_inverse_params(self)])
 
     def residual_params(self):
         '''
-        Calculates the parameters for the residual design. The residual design is the difference of all
-        blocks with respect to some fixed block of the design. Only a design if symmetric.
+        Calculates the parameters for the residual design. See BIBD.residual.
+
+        Outputs:
+            parameters  (list): See BIBD.__init__
         '''
         if self.symmetric == True:
             return [self.v-self.k, self.k - self.lambduh, self.lambduh]
 
     def residual_inverse_params(self):
+        '''
+        Calculates the parameters for the design such that its residual design is self. 
+
+        Outputs:
+            parameters  (list): See BIBD.__init__
+        '''
         if self.r == self.k + self.lambduh:
             return [self.v+self.k+self.lambduh, self.k + self.lambduh, self.lambduh]
 
     def residual_inverse(self):
+        '''
+        Returns the design such that its derived design is self. Will fail if it does not exist.
+
+        Outputs:
+            inverse residual design  (BIBD): Design whose residual is self
+        '''
         return BIBD(self.residual_inverse_params())
 
     def residual(self, blockstar=-1):
+        '''
+        Returns the residual design of self. The residual design is the difference of all
+        blocks with respect to some fixed block of the design. Only a design if symmetric.
+        
+        Outputs:
+        residual design     (residual_design): Residual design of self
+        '''
+
         return residual_design(self, blockstar)
     
     def complement_params(self):
         '''
-        Calculates the parameters for the complement design. The complement design is the complement of 
-        all of the blocks in the total point set.
-        '''
+        Calculates the parameters for the complement design.         '''
         return [self.v, self.v-self.k, self.b-2*self.r+self.lambduh]
 
     def complement(self):
+        '''
+        Returns the complement of self. The complement design is the complement of 
+        all of the blocks in the total point set.
+
+        Outputs:
+            complement design   (complement_design): Complement of self
+        '''
+
         return complement_design(self)
 
     def multiple(self, n):
+        '''
+        Returns the multiple design of self. The multiple design simply repeats each
+        block n times.
+
+        Outputs
+            multiple design     (multiple_design): Multiple design
+        '''
         return multiple_design(self, n)
 
     ### Bijection ###
     def biject_obvious(self):
         '''
-        Finds a bijection from the current set of points to a subset of the integers
+        Bijects from the current set of points to a subset of the integers. Only changes the
+        values of the points.
         '''
         for i in range(len(self.V)):
             self.V[i].value = i
     
     def decouple_points(self):
+        '''
+        Changes the blocks of a design from referring to its parent to referring to itself. Hence
+        any change to the parents blocks will not affect self
+        '''
         self.V = [designpoint(point.value) for point in self.parent.V]
         for block in self.blocks:
             for i in range(len(block.elements)):
@@ -196,6 +285,12 @@ class BIBD():
 
     ### Basic existence methods ###
     def exists_Hadamard_matrix(self, n):
+        '''
+        Determines if there exists a Hadamard design of order n.
+
+        Outputs:
+            exist   (existinfo): Information pertaining to existence
+        '''
         if n == 0:
             exist = existinfo(exist=False, message="Trivially")
             return exist
@@ -232,6 +327,12 @@ class BIBD():
         return exist
 
     def permits_Hadamard_design(self):
+        '''
+        Determines if there exists a Hadamard design with the same parameters as self.
+
+        Outputs:
+            exist   (existinfo): Information pertaining to existence of such a design
+        '''
         n = self.k - self.lambduh
         exist = self.exists_Hadamard_matrix(4*n)
         if exist.exist == True:
@@ -241,6 +342,12 @@ class BIBD():
         return existinfo(exist=False)
 
     def permits_AG(self):
+        '''
+        Determines if there exists an affine geometry with the same parameters as self
+
+        Outputs:
+            exist   (existinfo): Information pertaining to existence
+        '''
         if is_prime_power(self.v):
             p1, alpha1 = is_prime_power(self.v, get_data=True)
         else:
@@ -262,7 +369,10 @@ class BIBD():
 
     def permits_PG(self):
         '''
-        Optimise
+        Determines if there exists a projective geometry with the same parameters as self
+
+        Outputs:
+            exist   (existinfo): Information pertaining to existence
         '''
         possiblesols = []
         primepower = 2
@@ -292,6 +402,12 @@ class BIBD():
         return existinfo(exist=False)
          
     def permits_quad_residue(self):
+        '''
+        Determines if there exists a design generated by quadratic residues with the same parameters as self
+
+        Outputs:
+            exist   (existinfo): Information pertaining to existence
+        '''
         if is_prime_power(self.v):
             if self.k == (self.v-1)/2 and self.lambduh == (self.v-3)/4:
                 params = [self.v]
@@ -302,7 +418,10 @@ class BIBD():
     ### Complicated existence methods
     def existence(self):
         '''
-        Checks if a design can be constructed as a constructible complement or derived or multiple design
+        Checks if a design can be constructed. Checks complements, derived, residual, multiples etc of many types of designs.
+
+        Outputs:
+            exist   (existinfo): Information pertaining to existence
         '''
 
         basicexistence = self.existence_basic()
@@ -351,6 +470,9 @@ class BIBD():
     def existence_basic(self):
         '''
         Checks if a design can be constructed from other objects - vector fields, Hadamard matrices, etc
+
+        Outputs:
+            exist   (existinfo): Information pertaining to existence
         '''
         a = self.k - self.lambduh
         b = (-1)**((self.v-1)/2)* self.lambduh
@@ -553,6 +675,7 @@ class AG(BIBD):
         '''
         Gets the cosets of a given subspace in a vectorspace.
         '''
+        # TODO: Optimise
         availpoints = [i for i in self.V]
         cosets = []
         while availpoints != []:
@@ -649,7 +772,8 @@ class PG(BIBD):
 
     def generate_hyperplanes(self):
         '''
-        Generates the design isomorphic to the hyperplanes of the projective geometry
+        Generates the design isomorphic to the hyperplanes of the projective geometry. Equivalent (but faster)
+        to generating PG(n,q,n-1)
         '''
         # Uses Singer's method. Since there is an identification from an n+1 dimensional vector space over F_q to F_{q^(n+1)}, and
         # multiplication by x in F_{q^(n+1)} maps subspaces to subspaces, it is an automorphism of the design. Since we can identify
@@ -670,7 +794,17 @@ class PG(BIBD):
         self.V = diffdesign.V
 
 class difference_method(BIBD):
+    '''
+    A difference method is obtained by letting Z_n (in general an abelian group) act on a few blocks. May either choose to keep or reject
+    repetitions of blocks. If input is a single set, must contain every possible difference mod n to be a design.
+    '''
     def __init__(self, difference_sets, n, repetition="False", check=True):
+        '''
+        difference_sets     (list of lists) : A list containing the difference sets. The differences of each element should evenly cover Z_n
+        n                   (int)           : The number such that the difference set covers every difference up to this number.
+        repetition          (bool)          : Whether to allow repeated blocks
+        check               (bool)          : Whether to verify that the resulting BIBD is actually a design
+        '''
         self.difference_sets = difference_sets
         self.n = n
         self.repetition = repetition
@@ -708,6 +842,10 @@ class difference_method(BIBD):
 
 class Hadamard_matrix():
     def __init__(self, m, parents=[]):
+        '''
+        Inputs:
+            m   (int): The order of the Hadamard matrix
+        '''
         # Note that the "parent matrices" are actually 2 smaller matrices
         assert m%4 == 0 or m == 2, "Hadamard matrices have order divisible by 4 or are 2"
         self.order = m
@@ -722,6 +860,10 @@ class Hadamard_matrix():
             return -1
 
     def generate(self):
+        '''
+        Generates a Hadamard matrix, given that the method of construction is known
+        (using permits_Hadamrd_matrix or other method).
+        '''
         if self.parents == []:
             self.generate_basic()
         else:
@@ -733,6 +875,9 @@ class Hadamard_matrix():
             self.matrix = matrix1.multiply(matrix2).matrix
 
     def generate_basic(self):
+        '''
+        Generates a Hadamard matrix from basic non recursive methods
+        '''
         # We want to generate a Hadamard design of order n=m/4
         if self.order == 2:
             matrix = [[1,1],[1,-1]]
@@ -753,12 +898,18 @@ class Hadamard_matrix():
             self.matrix = matrix
 
     def design(self):
+        '''
+        Returns the Hadamard design associated with a Hadamard matrix
+        '''
         x = BIBD([self.order-1, self.order/2-1, self.order/4-1])
         x.V = [designpoint(i) for i in range(1, self.order)]
         x.blocks = [designblock([BIBD.pointinV(x, i) for i in range(1,len(self.matrix[j])) if self.matrix[j][i] == 1]) for j in range(1,self.order)]
         return x
 
     def multiply(self, matrix):
+        '''
+        Given self of order n and another matrix of order m, returns a Hadamard matrix with order nm.
+        '''
         order = self.order*matrix.order
         matrix = matrix.matrix
         product = Hadamard_matrix(order)
@@ -767,6 +918,9 @@ class Hadamard_matrix():
         return product
 
     def verify(self):
+        '''
+        Verifies that self is indeed Hadamard
+        '''
         for i,j in combinations(range(self.order), int(2)):
             row1 = self.matrix[i]
             row2 = self.matrix[j]
@@ -776,6 +930,12 @@ class Hadamard_matrix():
         
 
 def quad_residue_diff_set(q):
+    '''
+    Finds a difference set by considering the quadratic residues of F_q, for q = 3 mod 4.
+
+    Outputs:
+    residues    (list): List of quadratic residues
+    '''
     if q%4 == 3:
         pass
     else:
@@ -785,6 +945,9 @@ def quad_residue_diff_set(q):
     return residues
 
 def quad_residue_design(q):
+    '''
+    Finds a (q, q-1/2, q-3/4) design for q=3 mod 4 using quadratic residues.
+    '''
     x = difference_method([quad_residue_diff_set(q)], q, check=False)
     BIBD.__init__(x, [q, (q-1)/2, (q-3)/4])
     return x
