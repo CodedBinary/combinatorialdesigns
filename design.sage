@@ -1,9 +1,10 @@
 ##!/usr/bin/env sage
 from itertools import permutations
 from itertools import combinations
+from random import randint
 
 # TODO:
-# Verification of design ness (at least a few points?)
+# Computationally efficiently and definitively verify the design
 # Affine Singer
 # Documentation of sage classes and input/output/example
 # Documentation of functions
@@ -624,6 +625,27 @@ class BIBD():
         design = exist.method(*generated_params, **generated_kwparams)
         design.generate()
         return design
+
+    def verify_balance_random(self):
+        '''
+        Check if current design is balanced by checking a few points
+        '''
+        n = floor(self.v/10)
+        indices = list(set([randint(0,n+1) for i in range(n)]))
+        points = [self.V[i] for i in indices]
+
+        for point in points:
+            incidence = len([block for block in self.blocks if point in block.elements])
+            assert incidence == self.r, str(point.value) + " doesn't occur the right number of times!"
+        for a,b in combinations(points, int(2)):
+            coincidence = len([block for block in self.blocks if a in block.elements and b in block.elements])
+            assert coincidence == self.lambduh, str(a.value) + " and " + str(b.value) + "don't coincide in " + str(self.lambduh) + " points!"
+        
+        for block in self.blocks:
+            assert len(block.elements) == self.k, "Wrong block size!"
+
+        assert len(self.blocks) == self.b, "Wrong number of blocks!"
+        assert len(self.V) == self.v, "Wrong number of points!"
 
 ### Classes for creating new designs from old ones ###
 class derived_design(BIBD):
