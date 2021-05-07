@@ -4,13 +4,13 @@ from itertools import combinations
 from random import randint
 
 # TODO:
-# Computationally efficiently and definitively verify the design
 # Affine Singer
 
 # Documentation of sage classes and input/output/example
 # Documentation of functions
 # More example usage in README
 
+# Computationally efficiently and definitively verify the design
 # Speed up PG.generate() and other timing based stuff
 # Optimise Hadamard design stuff and coset stuff
 
