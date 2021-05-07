@@ -6,15 +6,17 @@ from random import randint
 # TODO:
 # Computationally efficiently and definitively verify the design
 # Affine Singer
+
 # Documentation of sage classes and input/output/example
 # Documentation of functions
 # More example usage in README
-# Extend affine to projective, rename projective to affine
+
 # Speed up PG.generate() and other timing based stuff
+# Optimise Hadamard design stuff and coset stuff
+
 # Fix PG.generate_hyperplanes for prime power
 # Fix quad_residue_design with prime powers
-# Optimise Hadamard design stuff and coset stuff
-# Make residual and derived designs fail gracefully if nonsensical
+
 
 def binom(n,r,q):
     '''
@@ -813,7 +815,6 @@ class AG(BIBD):
         for resolutionclass in self.resolutionclasses:
             blocks += resolutionclass
         self.blocks = blocks
-
 
 class PG(BIBD):
     '''
