@@ -18,7 +18,7 @@ from random import randint
 # Fix quad_residue_design with prime powers
 
 
-def binom(n,r,q):
+def binom(n, r, q):
     '''
     Computes the Gaussian binomial coefficient (n r)_q. This happens to be the number of r dimensional subspaces of an n dimensional vector space over the finite field F_q.
 
@@ -34,10 +34,10 @@ def binom(n,r,q):
         return 1
     elif r < n:
         topfrac = 1
-        for i in range(n-r+1,n+1):
+        for i in range(n-r+1, n+1):
             topfrac = topfrac * (1-q**i)
-        bottomfrac=1
-        for i in range(1,r+1):
+        bottomfrac = 1
+        for i in range(1, r+1):
             bottomfrac = bottomfrac * (1-q**i)
         bino = float(topfrac/bottomfrac)
         assert(bino.is_integer()), "binom returns an int"
@@ -69,7 +69,7 @@ class existinfo():
     '''
     Wrapper to hold existence information
     '''
-    def __init__(self, exist=0.5, method = lambda x: None, parameters=[], kwparameters = dict(), message="", parents=[]):
+    def __init__(self, exist=0.5, method = lambda x: None, parameters=[], kwparameters=dict(), message="", parents=[]):
         self.exist = exist                  # Whether the object exists
         self.parents = parents              # Any parent exist objects necessary to prove the existence of the object
         self.message = message              # A user friendly message explaining the existence
@@ -107,7 +107,6 @@ class BIBD():
             self.is_complement = False
             self.is_residual = False
             self.is_residual_inverse = False
-        
 
     def calculate_extra_parameters(self):
         '''
@@ -149,12 +148,12 @@ class BIBD():
         Outputs:
             parameters (see BIBD.__init__)
         '''
-        if self.symmetric == True and self.lambduh > 1:
+        if self.symmetric is True and self.lambduh > 1:
             return [self.k, self.lambduh, self.lambduh - 1]
 
     def derived_inverse_params(self):
         '''
-        Calculates the parameters for the design such that its derived design is self. 
+        Calculates the parameters for the design such that its derived design is self.
 
         Outputs:
             parameters  (list): See BIBD.__init__
@@ -181,7 +180,7 @@ class BIBD():
         Outputs:
             inverse derived design  (BIBD): Design whose derived is self
         '''
-        return BIBD([derived_inverse_params(self)])
+        return BIBD([self.derived_inverse_params(self)])
 
     def residual_params(self):
         '''
@@ -190,12 +189,12 @@ class BIBD():
         Outputs:
             parameters  (list): See BIBD.__init__
         '''
-        if self.symmetric == True:
+        if self.symmetric is True:
             return [self.v-self.k, self.k - self.lambduh, self.lambduh]
 
     def residual_inverse_params(self):
         '''
-        Calculates the parameters for the design such that its residual design is self. 
+        Calculates the parameters for the design such that its residual design is self.
 
         Outputs:
             parameters  (list): See BIBD.__init__
@@ -216,13 +215,13 @@ class BIBD():
         '''
         Returns the residual design of self. The residual design is the difference of all
         blocks with respect to some fixed block of the design. Only a design if symmetric.
-        
+
         Outputs:
         residual design     (residual_design): Residual design of self
         '''
 
         return residual_design(self, blockstar)
-    
+
     def complement_params(self):
         '''
         Calculates the parameters for the complement design.         '''
@@ -230,7 +229,7 @@ class BIBD():
 
     def complement(self):
         '''
-        Returns the complement of self. The complement design is the complement of 
+        Returns the complement of self. The complement design is the complement of
         all of the blocks in the total point set.
 
         Outputs:
@@ -257,7 +256,7 @@ class BIBD():
         '''
         for i in range(len(self.V)):
             self.V[i].value = i
-    
+
     def decouple_points(self):
         '''
         Changes the blocks of a design from referring to its parent to referring to itself. Hence
@@ -287,8 +286,8 @@ class BIBD():
         '''
         return [[[point.value for point in block.elements] for block in resolclass] for resolclass in self.resolutionclasses]
 
-
     ### Basic existence methods ###
+
     def exists_Hadamard_matrix(self, n):
         '''
         Determines if there exists a Hadamard design of order n.
@@ -304,40 +303,40 @@ class BIBD():
             exist = existinfo(
                     exist=True, 
                     message="Hadamard matrix of order 2 exists", 
-                    parameters = [2], 
-                    method = Hadamard_matrix)
+                    parameters=[2], 
+                    method=Hadamard_matrix)
             return exist
 
-        if n%4 != 0:
+        if n % 4 != 0:
             exist = existinfo(
-                    exist=False, 
-                    message = "Hadamard matrix order not divisible by 4")
+                exist=False,
+                message="Hadamard matrix order not divisible by 4")
             return exist
 
-        if is_prime_power(n-1) and (n-1)%4 == 3:
+        if is_prime_power(n-1) and (n-1) % 4 == 3:
             exist = existinfo(
-                    exist=True, 
-                    message = str(n-1) + " is prime power 3 mod 4", 
-                    parameters = [n], 
-                    method = Hadamard_matrix)
+                exist=True,
+                message=str(n-1) + " is prime power 3 mod 4",
+                parameters=[n],
+                method=Hadamard_matrix)
             return exist
-        
-        if n%4 == 0:
+
+        if n % 4 == 0:
             for divisor1 in divisors(n):
                 if divisor1 != n and divisor1 != 1:
                     divisor2 = n/(divisor1)
                     exist1 = self.exists_Hadamard_matrix(divisor1)
                     exist2 = self.exists_Hadamard_matrix(divisor2)
-                    if exist1.exist == True and exist2.exist == True:
-                        exist = existinfo(exist=True, 
-                                message = str("Formed from:  Hadamard matrix order ") + str(exist1.parameters[0]) + ", and Hadamard matrix order " + str(exist2.parameters[0]),
-                                method = Hadamard_matrix, 
-                                parameters = [n],
-                                kwparameters = {"parents": [exist1, exist2]},
-                                parents = [exist1, exist2])
+                    if exist1.exist is True and exist2.exist is True:
+                        exist = existinfo(exist=True,
+                            message=str("Formed from:  Hadamard matrix order ") + str(exist1.parameters[0]) + ", and Hadamard matrix order " + str(exist2.parameters[0]),
+                            method=Hadamard_matrix, 
+                            parameters=[n],
+                            kwparameters={"parents": [exist1, exist2]},
+                            parents=[exist1, exist2])
                         return exist
 
-        exist = existinfo(exist = 0.5, message = "Tried everything")
+        exist = existinfo(exist=0.5, message="Tried everything")
         return exist
 
     def permits_Hadamard_design(self):
@@ -349,14 +348,14 @@ class BIBD():
         '''
         n = self.k - self.lambduh
         exist = self.exists_Hadamard_matrix(4*n)
-        if exist.exist == True:
+        if exist.exist is True:
             if self.v == 4*n-1 and self.k == 2*n-1 and self.lambduh == n-1:
                 exist2 = existinfo(
-                        exist=True, 
-                        message = "Hadamard design of order " + str(n) + " formed by Hadamard matrix of order " + str(4*n) + ": " + exist.message, 
-                        parameters = [exist], 
-                        method = Hadamard_matrix.design, 
-                        parents = [exist])
+                    exist=True,
+                    message="Hadamard design of order " + str(n) + " formed by Hadamard matrix of order " + str(4*n) + ": " + exist.message,
+                    parameters=[exist],
+                    method=Hadamard_matrix.design,
+                    parents=[exist])
                 return exist2
         return existinfo(exist=False)
 
@@ -384,10 +383,10 @@ class BIBD():
             if binom(alpha1/divisor - 1, alpha2/divisor-1, p1**divisor) == self.lambduh:
                 params = [alpha1/divisor, p1**divisor, alpha2/divisor]
                 return existinfo(
-                    exist=True, 
-                    parameters = params, 
-                    method=AG, 
-                    message = "Affine geometry " + str(params))
+                    exist=True,
+                    parameters=params,
+                    method=AG,
+                    message="Affine geometry " + str(params))
         return existinfo(exist=False)
 
     def permits_PG(self):
@@ -401,33 +400,33 @@ class BIBD():
         primepower = 2
         n = 1
         cumulativeresults = []
-        while binom(2,1,primepower) <= self.v:
-            guessselfn = binom(n,1,primepower)
+        while binom(2, 1, primepower) <= self.v:
+            guessselfn = binom(n, 1, primepower)
             if guessselfn == self.v:
-                possiblesols += [[n-1,primepower, cumulativeresults]]
+                possiblesols += [[n-1, primepower, cumulativeresults]]
                 primepower = next_prime_power(primepower)
-                n = 1 
+                n = 1
                 cumulativeresults = []
-                
+
             if guessselfn < self.v:
                 n += 1
                 cumulativeresults += [guessselfn]
             else:
                 primepower = next_prime_power(primepower)
-                n = 1 
+                n = 1
                 cumulativeresults = []
-        
+
         for n, primepower, cumulativeresults in possiblesols:
             if self.k in cumulativeresults:
-                if binom(n-1,cumulativeresults.index(self.k)-1,primepower) == self.lambduh:
-                    params = [n,primepower,cumulativeresults.index(self.k)]
+                if binom(n-1, cumulativeresults.index(self.k)-1, primepower) == self.lambduh:
+                    params = [n, primepower, cumulativeresults.index(self.k)]
                     return existinfo(
-                            exist=True, 
-                            parameters = params, 
-                            method=PG, 
-                            message = "Projective geometry " + str(params))
+                        exist=True,
+                        parameters=params,
+                        method=PG,
+                        message="Projective geometry " + str(params))
         return existinfo(exist=False)
-         
+
     def permits_quad_residue(self):
         '''
         Determines if there exists a design generated by quadratic residues with the same parameters as self
@@ -439,14 +438,15 @@ class BIBD():
             if self.k == (self.v-1)/2 and self.lambduh == (self.v-3)/4:
                 params = [self.v]
                 return existinfo(
-                        exist = True, 
-                        parameters = params, 
-                        method = quad_residue_design, 
-                        message = "Quadratic Residue " + str(params[0]))
+                    exist=True, 
+                    parameters=params, 
+                    method=quad_residue_design, 
+                    message="Quadratic Residue " + str(params[0]))
 
-        return existinfo(exist = False)
-    
+        return existinfo(exist=False)
+
     ### Complicated existence methods
+
     def existence(self):
         '''
         Checks if a design can be constructed. Checks complements, derived, residual, multiples etc of many types of designs.
@@ -456,67 +456,67 @@ class BIBD():
         '''
 
         basicexistence = self.existence_basic()
-        if basicexistence.exist == True:
+        if basicexistence.exist is True:
             return basicexistence
 
-        if basicexistence.exist == False:
+        if basicexistence.exist is False:
             return basicexistence
 
         for possiblelambduh in divisors(self.lambduh):
             if possiblelambduh != self.lambduh:
                 try:
-                    x = BIBD([self.v,self.k,possiblelambduh])
+                    x = BIBD([self.v, self.k, possiblelambduh])
                     exist = x.existence()
-                    if exist.exist == True:
+                    if exist.exist is True:
                         return existinfo(
-                                exist=True, 
-                                message = "Multiply by " + str(self.lambduh/possiblelambduh) + ": " + exist.message, 
-                                method = BIBD.multiple,
-                                parameters = [exist, int(self.lambduh/possiblelambduh)],
-                                parents = [exist])
+                            exist=True,
+                            message="Multiply by " + str(self.lambduh/possiblelambduh) + ": " + exist.message,
+                            method=BIBD.multiple,
+                            parameters=[exist, int(self.lambduh/possiblelambduh)],
+                            parents=[exist])
                 except AssertionError:
                     pass
 
-        if self.is_complement == False and self.v - self.k > 1:
+        if self.is_complement is False and self.v - self.k > 1:
             y = self.complement()
             y.is_complement = True
             exist = y.existence()
-            if exist.exist == True:
+            if exist.exist is True:
                 return existinfo(
-                    exist=True, 
-                    message = "Complement of: " + exist.message, 
-                    method = BIBD.complement,
-                    parameters = [exist],
-                    parents = [exist])
+                    exist=True,
+                    message="Complement of: " + exist.message,
+                    method=BIBD.complement,
+                    parameters=[exist],
+                    parents=[exist])
 
-        if self.r == self.k + self.lambduh and self.is_residual == False:
+        if self.r == self.k + self.lambduh and self.is_residual is False:
             y = self.residual_inverse()
             y.is_residual_inverse = True
             exist = y.existence()
-            if exist.exist == True:
+            if exist.exist is True:
                 return existinfo(
-                    exist=True, 
-                    message = "Residual of: " + exist.message, 
-                    method = BIBD.residual, 
-                    parents = [exist],
-                    parameters = [exist])
+                    exist=True,
+                    message="Residual of: " + exist.message,
+                    method=BIBD.residual,
+                    parents=[exist],
+                    parameters=[exist])
 
-            if self.lambduh < 3 and exist.exist == False:
-                return existinfo(exist=False, message = "Quasiresidual designs of lambda < 3 are residual designs, but no residual exists: " + exist.message)
+            if self.lambduh < 3 and exist.exist is False:
+                return existinfo(exist=False, message="Quasiresidual designs of lambda < 3 are residual designs, but no residual exists: " + exist.message)
 
-        if self.symmetric and self.is_residual_inverse == False and self.k - self.lambduh > 1:
+        if self.symmetric and self.is_residual_inverse is False and self.k - self.lambduh > 1:
             x = self.residual()
             x.is_residual = True
             if x.lambduh < 3:
                 exist = x.existence()
-                if exist.exist == True:
+                if exist.exist is True:
                     return existinfo(
-                        exist=True, 
-                        message = "Quasiresidual design: " + str(x.parameters) + exist.message, 
-                        parents = [exist]
-                        )
+                        exist=True,
+                        message="Quasiresidual design: " + str(x.parameters) + exist.message,
+                        parents=[exist]
+                    )
 
-        return existinfo(exist=0.5, message = "Maybe")
+        return existinfo(exist=0.5, message="Maybe")
 
     def existence_basic(self):
         '''
@@ -526,7 +526,7 @@ class BIBD():
             exist   (existinfo): Information pertaining to existence
         '''
         a = self.k - self.lambduh
-        b = (-1)**((self.v-1)/2)* self.lambduh
+        b = (-1)**((self.v-1)/2) * self.lambduh
 
         exist_hadamard_design = self.permits_Hadamard_design()
         exist_quadresidue = self.permits_quad_residue()
@@ -534,10 +534,10 @@ class BIBD():
         exist_projectivegeometry = self.permits_PG()
 
         if self.b < self.v:
-            return existinfo(exist = False, message = "Violates Fischer's Inequality")
+            return existinfo(exist=False, message="Violates Fischer's Inequality")
 
         elif self.k == self.v - 1 and self.lambduh == self.v - 2:
-            return existinfo(exist=True, message = "Trivial case")
+            return existinfo(exist=True, message="Trivial case")
 
         elif exist_quadresidue.exist:
             return exist_quadresidue
@@ -551,25 +551,24 @@ class BIBD():
         elif exist_hadamard_design.exist:
             return exist_hadamard_design
 
-        if self.symmetric == True:
-            if self.v%2 == 0:
+        if self.symmetric is True:
+            if self.v % 2 == 0:
                 # The Bruck-Ryser-Chowla theorem states that, for v even, a (v,k,lambda) design exists, then
                 # (k-lambda) is a perfect square
                 if sqrt(a).is_integer():
-                    return existinfo(exist=0.5, message = str(self.k-self.lambduh) + " is a perfect square")
+                    return existinfo(exist=0.5, message=str(self.k-self.lambduh) + " is a perfect square")
                 else:
-                    return existinfo(exist=False, message = "by BRC, " + str(self.k-self.lambduh) + " not perfect square")
+                    return existinfo(exist=False, message="by BRC, " + str(self.k-self.lambduh) + " not perfect square")
 
-            elif self.v%2 == 1:
+            elif self.v % 2 == 1:
                 # The Bruck-Ryser-Chowla theorem states that if, for v odd, a (v,k,lambda) design exists, then
                 # z^2 = (k-lambda) x^2 + (-1)^((v-1)/2) lambda y^2 has a nontrivial solution
 
-
-                # Let m be a factor appearing once in ab. Let c be b if m divides a, and a if b divides m. 
+                # Let m be a factor appearing once in ab. Let c be b if m divides a, and a if b divides m.
                 # If {x^2 | x in Z_m} cap {c*x^2 | x in Z_m} = {0}, then the equation z^2 = ax^2 + by^2
                 # has no solutions. Simply take both sides mod m, deduce two squares must be 0, and sub in.
                 if a*b != 0:
-                    possiblem = [fact[0] for fact in factor(a*b) if fact[1]==1]
+                    possiblem = [fact[0] for fact in factor(a*b) if fact[1] == 1]
                     for m in possiblem:
                         if m.divides(a):
                             c = int(b)
@@ -579,34 +578,34 @@ class BIBD():
                         field = Integers(m)
                         possiblez = set([i**2 for i in field]).intersection(set([c*i**2 for i in field]))
                         if possiblez == {0}:
-                            return existinfo(exist=False, message = "common divisibility argument mod " + str(m))
+                            return existinfo(exist=False, message="common divisibility argument mod " + str(m))
                 else:
-                    return existinfo(exist=0.5, message = "solution to BRC given by " + str((0,1,0)) + " or " + str((0,0,1)))
+                    return existinfo(exist=0.5, message="solution to BRC given by " + str((0, 1, 0)) + " or " + str((0, 0, 1)))
 
                 # Easy solutions
                 if sqrt(a).is_integer():
-                    return existinfo(exist=0.5, message = "solution to BRC given by " + str((sqrt(a), 1, 0)))
+                    return existinfo(exist=0.5, message="solution to BRC given by " + str((sqrt(a), 1, 0)))
                 elif sqrt(self.lambduh).is_integer() and b>0:
-                    return existinfo(exist=0.5, message = "solution to BRC given by " + str((sqrt(self.lambduh), 0, 1)))
+                    return existinfo(exist=0.5, message="solution to BRC given by " + str((sqrt(self.lambduh), 0, 1)))
                 elif sqrt(a+b).is_integer():
-                    return existinfo(exist=0.5, message = "solution to BRC given by " + str((sqrt(a+b), 1, 1)))
+                    return existinfo(exist=0.5, message="solution to BRC given by " + str((sqrt(a+b), 1, 1)))
                 elif a == 1 and b == 1:
-                    return existinfo(exist=0.5, message = "solution to BRC given by " + str((5,3,4)))
+                    return existinfo(exist=0.5, message="solution to BRC given by " + str((5, 3, 4)))
 
                 # If a=b=0 mod m and a/m = b/m != 0 mod m, we immediately know that z^2 = 0 mod m
                 # and then a/m x^2 + b/m y^2 = 0 mod m, which means a/m (x^2+y^2) = 0 mod m. For m=3,
                 # then x^2+y^2 in {0,1,2}, and since {x in Z_3 | exists c in Z_3\{0} : cx = 0} = {0},
                 # we know that x^2+y^2 in {0}, so we have a common divisibility argument.
-                elif a%3 == 0 and b%3 == 0 and (a/3)%3 == (b/3)%3 and ((a/3)%3 == 2 or (a/3)%3 == 1):
-                    return existinfo(exist=False, message = "common divisibility argument mod 3")
-                elif (a%4 == 0 and (a/4)%4 != 0 and (b%4 == 2 or b%4 == 3)) or (b%4 == 0 and (b/4)%4 != 0 and (a%4 == 2 or a%4 == 3)):
-                    return existinfo(exist=False, message = "common divisibility argument mod 4")
+                elif a % 3 == 0 and b % 3 == 0 and (a/3) % 3 == (b/3) % 3 and ((a/3) % 3 == 2 or (a/3) % 3 == 1):
+                    return existinfo(exist=False, message="common divisibility argument mod 3")
+                elif (a % 4 == 0 and (a/4) % 4 != 0 and (b % 4 == 2 or b % 4 == 3)) or (b % 4 == 0 and (b/4) % 4 != 0 and (a % 4 == 2 or a % 4 == 3)):
+                    return existinfo(exist=False, message="common divisibility argument mod 4")
 
                 # Giving up
                 else:
-                    return existinfo(exist=0.5, message = "try BRC?" + str(self.parameters) + "z^2 = " + str(a) + "x^2 + " + str(b) + "y^2")
+                    return existinfo(exist=0.5, message="try BRC?" + str(self.parameters) + "z^2 = " + str(a) + "x^2 + " + str(b) + "y^2")
         else:
-            return existinfo(exist=0.5, message = "maybe?")
+            return existinfo(exist=0.5, message="maybe?")
 
     def generate(self, exist):
         '''
@@ -633,16 +632,16 @@ class BIBD():
         Check if current design is balanced by checking a few points
         '''
         n = floor(self.v/10)
-        indices = list(set([randint(0,n+1) for i in range(n)]))
+        indices = list(set([randint(0, n+1) for i in range(n)]))
         points = [self.V[i] for i in indices]
 
         for point in points:
             incidence = len([block for block in self.blocks if point in block.elements])
             assert incidence == self.r, str(point.value) + " doesn't occur the right number of times!"
-        for a,b in combinations(points, int(2)):
+        for a, b in combinations(points, int(2)):
             coincidence = len([block for block in self.blocks if a in block.elements and b in block.elements])
             assert coincidence == self.lambduh, str(a.value) + " and " + str(b.value) + "don't coincide in " + str(self.lambduh) + " points!"
-        
+
         for block in self.blocks:
             assert len(block.elements) == self.k, "Wrong block size!"
 
@@ -662,11 +661,11 @@ class derived_design(BIBD):
         Calculates the parameters for the derived design. A derived design is the intersection of all
         blocks with respect to some fixed block of the design. Only a design if symmetric.
         '''
-        if self.parent.symmetric == True and self.parent.lambduh > 1:
+        if self.parent.symmetric is True and self.parent.lambduh > 1:
             return [self.parent.k, self.parent.lambduh, self.parent.lambduh - 1]
-        else: 
+        else:
             return []
-    
+
     def generate(self, blockstar=-1):
         '''
         Returns the derived design with respect to blockstar. Defaults to final block.
@@ -691,7 +690,7 @@ class residual_design(BIBD):
         Calculates the parameters for the residual design. The residual design is the difference of all
         blocks with respect to some fixed block of the design. Only a design if symmetric.
         '''
-        if self.parent.symmetric == True:
+        if self.parent.symmetric is True:
             return [self.parent.v-self.parent.k, self.parent.k - self.parent.lambduh, self.parent.lambduh]
         else:
             return []
@@ -703,7 +702,7 @@ class residual_design(BIBD):
         if blockstar == -1:
             blockstar = self.parent.blocks[-1]
         params = self.residual_params()
-        assert(params != None), "Not symmetric!"
+        assert(params is not None), "Not symmetric!"
         iteratelist = [i for i in self.parent.blocks]
         iteratelist.remove(blockstar)
         self.V = [point for point in self.parent.V if point not in blockstar.elements]
@@ -718,14 +717,14 @@ class complement_design(BIBD):
 
     def complement_params(self):
         '''
-        Calculates the parameters for the complement design. The complement design is the complement of 
+        Calculates the parameters for the complement design. The complement design is the complement of
         all of the blocks in the total point set.
         '''
         return [self.parent.v, self.parent.v-self.parent.k, self.parent.b-2*self.parent.r+self.parent.lambduh]
 
     def generate(self, blockstar=-1):
         '''
-        Returns the complement design with respect to blockstar. 
+        Returns the complement design with respect to blockstar.
         '''
         if blockstar == -1:
             blockstar = self.parent.blocks[-1]
@@ -754,13 +753,13 @@ class AG(BIBD):
     '''
     An affine geometry of order n over F_q. An affine geometry is the set of all d-flats of an n dimensional vector space over F_q. And a d-flat is a coset of a d-dimensional subspace. An example of an infinite affine geometry (which this program is not concerned with) is the set of all lines in a 3 dimensional space. Or the set of all planes. A line or plane through the origin is a 1 or 2 dimensional subspace, and a general line or plane is a translated version of that, so a coset. The points of the affine geometry are just the 0-flats.
     '''
-    def __init__(self,  n, q, d=-1):
+    def __init__(self, n, q, d=-1):
         if d == -1:
             d = n-1
         self.n = n
         self.q = q
         self.d = d
-        self.v, self.k, self.lambduh = (q**n,   q**d,  binom(n-1, d-1, q))
+        self.v, self.k, self.lambduh = (q**n, q**d, binom(n-1, d-1, q))
         self.parameters = [int(self.v), int(self.k), int(self.lambduh)]
         BIBD.__init__(self, self.parameters)
 
@@ -819,16 +818,16 @@ class AG(BIBD):
 class PG(BIBD):
     '''
     A projective geometry of order n over F_q. Given an n+1 dimensional vector space V over F_q, the projection of a k+1 dimensional subspace U is defined
-    to be the set of all one dimensional subspaces of U. This has dimension k. Alternatively, we could define an equivalence relation ~ that is "being a scalar 
-    multiple of each other", and the projection of U would be U/~. The projective geometry of order n over F_q has its k dimensional subspaces given by the 
-    projections of k+1 dimensional subspaces in an n+1 dimensional vector space over F_q. If you don't know what finite projective geometries are, I honestly 
+    to be the set of all one dimensional subspaces of U. This has dimension k. Alternatively, we could define an equivalence relation ~ that is "being a scalar
+    multiple of each other", and the projection of U would be U/~. The projective geometry of order n over F_q has its k dimensional subspaces given by the
+    projections of k+1 dimensional subspaces in an n+1 dimensional vector space over F_q. If you don't know what finite projective geometries are, I honestly
     don't know if this would help. 
     '''
-    def __init__(self,  n, q, d=-1):
+    def __init__(self, n, q, d=-1):
         if d == -1:
             d = n-1
         self.n, self.q, self.d = n, q, d
-        self.v, self.k, self.lambduh = (binom(n+1,  1, q), binom(n, 1, q), binom(n-1, 1, q))
+        self.v, self.k, self.lambduh = (binom(n+1, 1, q), binom(n, 1, q), binom(n-1, 1, q))
         self.parameters = (int(self.v), int(self.k), int(self.lambduh))
         BIBD.__init__(self, self.parameters)
 
@@ -858,7 +857,7 @@ class PG(BIBD):
         field = GF(self.q)
         V = VectorSpace(field, self.n+1)
         self.projection_points(V)
-        
+
         # Make sure to trim off the identity element
         self.blocks = [self.projection([i for i in subspace][1:]) for subspace in V.subspaces(self.d+1)]
 
@@ -873,12 +872,12 @@ class PG(BIBD):
         # our geometry with.
 
         field = GF(self.q**(self.n+1))
-        #powers = field.primitive_element().powers(self.q**(self.n+1))
+        # powers = field.primitive_element().powers(self.q**(self.n+1))
         powers = field.primitive_element().powers((self.q**(self.n+1)-1)/(self.q-1)-1)
         print(powers)
         p = field.base().order()
         alpha = log(self.q)/log(p)
-        diffset = [i for i in range(len(powers)) if powers[i].polynomial().degree() <= self.n*alpha -1 ]
+        diffset = [i for i in range(len(powers)) if powers[i].polynomial().degree() <= self.n*alpha - 1]
         print(diffset)
         diffdesign = difference_method([diffset], (self.q**(self.n+1)-1)/(self.q-1), check=False)
         diffdesign.generate()
@@ -900,18 +899,18 @@ class difference_method(BIBD):
         self.difference_sets = difference_sets
         self.n = n
         self.repetition = repetition
-        if check == True:
+        if check is True:
             self.verify()
-        
+
     def verify(self):
         differences = [0 for i in range(self.n)]
         for diffset in self.difference_sets:
-            for x,y in permutations(diffset, int(2)):  # No idea why int(2) is needed
+            for x, y in permutations(diffset, int(2)):  # No idea why int(2) is needed
                 try:
-                    differences[(x-y)%self.n] += 1
+                    differences[(x-y) % self.n] += 1
                 except KeyError:
-                    differences[(x-y)%self.n] = 1
-        differences[0]=differences[1]
+                    differences[(x-y) % self.n] = 1
+        differences[0] = differences[1]
 
         assert(len(set(differences)) == 1), "Not a difference system: Unequal differences"
         assert(len(set([len(i) for i in self.difference_sets])) == 1), "Not a difference system: Lengths not fixed"
@@ -920,14 +919,13 @@ class difference_method(BIBD):
         self.k = len(self.difference_sets[0])
         self.parameters = (self.n, self.k, self.lambduh)
         BIBD.__init__(self, self.parameters)
-            
 
     def generate(self):
         self.V = [designpoint(i) for i in range(self.n)]
         sets = []
         for difference_set in self.difference_sets:
-            sets += [[self.V[(x+i)%self.n] for x in difference_set] for i in range(self.n)]
-        if self.repetition == False:
+            sets += [[self.V[(x+i) % self.n] for x in difference_set] for i in range(self.n)]
+        if self.repetition is False:
             self.blocks = [designblock(theset) for theset in list(set(sets))]
         else:
             self.blocks = [designblock(theset) for theset in sets]
@@ -939,7 +937,7 @@ class Hadamard_matrix():
             m   (int): The order of the Hadamard matrix
         '''
         # Note that the "parent matrices" are actually 2 smaller matrices
-        assert m%4 == 0 or m == 2, "Hadamard matrices have order divisible by 4 or are 2"
+        assert m % 4 == 0 or m == 2, "Hadamard matrices have order divisible by 4 or are 2"
         self.order = m
         self.parents = parents
 
@@ -972,11 +970,11 @@ class Hadamard_matrix():
         '''
         # We want to generate a Hadamard design of order n=m/4
         if self.order == 2:
-            matrix = [[1,1],[1,-1]]
+            matrix = [[1, 1], [1, -1]]
             self.matrix = matrix
 
         elif self.order == 4:
-            matrix = [[1,1,1,1],[1,1,-1,-1],[1,-1,1,-1],[1,-1,-1,1]]
+            matrix = [[1, 1, 1, 1], [1, 1, -1, -1], [1, -1, 1, -1], [1, -1, -1, 1]]
             self.matrix = matrix
 
         else:
@@ -993,8 +991,8 @@ class Hadamard_matrix():
         '''
         Returns the Hadamard design associated with a Hadamard matrix
         '''
-        
-        design = Hadamard_design((self.order)/4, parents = [self])
+
+        design=Hadamard_design((self.order)/4, parents=[self])
         return design
 
     def multiply(self, matrix):
@@ -1012,16 +1010,15 @@ class Hadamard_matrix():
         '''
         Verifies that self is indeed Hadamard
         '''
-        for i,j in combinations(range(self.order), int(2)):
+        for i, j in combinations(range(self.order), int(2)):
             row1 = self.matrix[i]
             row2 = self.matrix[j]
             dot = [row1[i]*row2[i] for i in range(len(row1))]
             if sum(dot) != 0:
                 print("NO", i, j)
-        
 
 class Hadamard_design(BIBD):
-    def __init__(self, n, parents = []):
+    def __init__(self, n, parents=[]):
         self.order = n
         self.parameters = [4*n-1, 2*n-1, n-1]
         BIBD.__init__(self, self.parameters)
@@ -1031,7 +1028,7 @@ class Hadamard_design(BIBD):
 
     def generate(self):
         self.V = [designpoint(i) for i in range(1, self.v+1)]
-        self.blocks = [designblock([BIBD.pointinV(self, i) for i in range(1,len(self.parent_matrix[j])) if self.parent_matrix[j][i] == 1]) for j in range(1,self.v+1)]  # Optimise
+        self.blocks = [designblock([BIBD.pointinV(self, i) for i in range(1, len(self.parent_matrix[j])) if self.parent_matrix[j][i] == 1]) for j in range(1, self.v+1)]  # Optimise
 
 
 def quad_residue_diff_set(q):
@@ -1041,7 +1038,7 @@ def quad_residue_diff_set(q):
     Outputs:
     residues    (list): List of quadratic residues
     '''
-    if q%4 == 3:
+    if q % 4 == 3:
         pass
     else:
         print("Error: q != 3 mod 4")
@@ -1054,7 +1051,7 @@ def quad_residue_design(q):
     Finds a (q, q-1/2, q-3/4) design for q=3 mod 4 using quadratic residues.
     '''
     x = difference_method([quad_residue_diff_set(q)], q, check=True)
-    #BIBD.__init__(x, [q, (q-1)/2, (q-3)/4])
+    # BIBD.__init__(x, [q, (q-1)/2, (q-3)/4])
     return x
 
 #for v in range(5,20):
