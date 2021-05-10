@@ -649,6 +649,7 @@ class BIBD():
         '''
         Given an exist object describing a proof of the existence of the design, generate said design
         '''
+        # Optimise
         if exist == -1:
             exist = self.existence()
         assert exist.exist is True, "Design doesn't exist"
