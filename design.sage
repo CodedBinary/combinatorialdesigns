@@ -447,21 +447,10 @@ class BIBD():
 
     ### Complicated existence methods
 
-    def existence(self):
+    def check_divisors(self):
         '''
-        Checks if a design can be constructed. Checks complements, derived, residual, multiples etc of many types of designs.
-
-        Outputs:
-            exist   (existinfo): Information pertaining to existence
+        Checks if a divisor of the design exists.
         '''
-
-        basicexistence = self.existence_basic()
-        if basicexistence.exist is True:
-            return basicexistence
-
-        if basicexistence.exist is False:
-            return basicexistence
-
         for possiblelambduh in divisors(self.lambduh):
             if possiblelambduh != self.lambduh:
                 try:
@@ -476,7 +465,12 @@ class BIBD():
                             parents=[exist])
                 except AssertionError:
                     pass
+        return existinfo(exist=0.5)
 
+    def check_complement(self):
+        '''
+        Checks if the complement exists recursively
+        '''
         if self.is_complement is False and self.v - self.k > 1:
             y = self.complement()
             y.is_complement = True
@@ -488,7 +482,12 @@ class BIBD():
                     method=BIBD.complement,
                     parameters=[exist],
                     parents=[exist])
+        return existinfo(exist=0.5)
 
+    def check_residual_inverse(self):
+        '''
+        Checks if the design is the residual of a design that exists
+        '''
         if self.r == self.k + self.lambduh and self.is_residual is False:
             y = self.residual_inverse()
             y.is_residual_inverse = True
@@ -503,7 +502,12 @@ class BIBD():
 
             if self.lambduh < 3 and exist.exist is False:
                 return existinfo(exist=False, message="Quasiresidual designs of lambda < 3 are residual designs, but no residual exists: " + exist.message)
+        return existinfo(exist=0.5)
 
+    def check_residual(self):
+        '''
+        Checks if the residual of the design has lambda < 3, which implies the existence of the design
+        '''
         if self.symmetric and self.is_residual_inverse is False and self.k - self.lambduh > 1:
             x = self.residual()
             x.is_residual = True
@@ -515,6 +519,35 @@ class BIBD():
                         message="Quasiresidual design: " + str(x.parameters) + exist.message,
                         parents=[exist]
                     )
+        return existinfo(exist=0.5)
+
+    def existence(self):
+        '''
+        Checks if a design can be constructed. Checks complements, derived, residual, multiples etc of many types of designs.
+
+        Outputs:
+            exist   (existinfo): Information pertaining to existence
+        '''
+
+        basicexistence = self.existence_basic()
+        if isinstance(basicexistence.exist, bool):
+            return basicexistence
+
+        exists_divisor = self.check_divisors()
+        if exists_divisor.exist is True:
+            return exists_divisor
+
+        exists_complement = self.check_complement()
+        if exists_complement.exist is True:
+            return exists_complement
+
+        exists_low_lambda_residual = self.check_residual()
+        if exists_low_lambda_residual.exist is True:
+            return exists_low_lambda_residual
+
+        exists_residual_inverse = self.check_residual_inverse()
+        if isinstance(exists_residual_inverse.exist, bool) is True:
+            return exists_residual_inverse
 
         return existinfo(exist=0.5, message="Maybe")
 
@@ -585,27 +618,26 @@ class BIBD():
         Outputs:
             exist   (existinfo): Information pertaining to existence
         '''
-        exist_hadamard_design = self.permits_Hadamard_design()
-        exist_quadresidue = self.permits_quad_residue()
-        exist_affinegeometry = self.permits_AG()
-        exist_projectivegeometry = self.permits_PG()
-
         if self.b < self.v:
             return existinfo(exist=False, message="Violates Fischer's Inequality")
 
-        elif self.k == self.v - 1 and self.lambduh == self.v - 2:
+        if self.k == self.v - 1 and self.lambduh == self.v - 2:
             return existinfo(exist=True, message="Trivial case")
 
-        elif exist_quadresidue.exist:
+        exist_quadresidue = self.permits_quad_residue()
+        if exist_quadresidue.exist:
             return exist_quadresidue
 
-        elif exist_affinegeometry.exist:
+        exist_affinegeometry = self.permits_AG()
+        if exist_affinegeometry.exist:
             return exist_affinegeometry
 
-        elif exist_projectivegeometry.exist:
+        exist_projectivegeometry = self.permits_PG()
+        if exist_projectivegeometry.exist:
             return exist_projectivegeometry
 
-        elif exist_hadamard_design.exist:
+        exist_hadamard_design = self.permits_Hadamard_design()
+        if exist_hadamard_design.exist:
             return exist_hadamard_design
 
         if self.symmetric is True:
@@ -1024,6 +1056,9 @@ class Hadamard_matrix():
                 print("NO", i, j)
 
 class Hadamard_design(BIBD):
+    '''
+    A Hadamard design. Intended for use when corresponding Hadamard matrix is known. 
+    '''
     def __init__(self, n, parents=[]):
         self.order = n
         self.parameters = [4*n-1, 2*n-1, n-1]
@@ -1033,6 +1068,17 @@ class Hadamard_design(BIBD):
             self.parent_matrix = parents[0].matrix
 
     def generate(self):
+        '''
+        Generates the Hadamard design, provided that its parent matrix is known
+        '''
+        if hasattr(self, "parent_matrix"):
+            pass
+        else:
+            exist = self.permits_Hadamard_design()
+            if exist.exist is True:
+                self.parent = exist.parents[0]
+                self.parent_matrix = self.parents[0].matrix
+
         self.V = [designpoint(i) for i in range(1, self.v+1)]
         self.blocks = [designblock([BIBD.pointinV(self, i) for i in range(1, len(self.parent_matrix[j])) if self.parent_matrix[j][i] == 1]) for j in range(1, self.v+1)]  # Optimise
 
