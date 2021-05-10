@@ -208,6 +208,39 @@ sage: exist.exist
 True
 sage: exist.message
 'Quadratic Residue 7'
+sage: x.generate(exist)
+<__main__.multiple_design object at 0x6620cf5404f0>
+sage: x.list_blocks()
+[[1, 2, 4],
+ [2, 3, 5],
+ [3, 4, 6],
+ [4, 5, 0],
+ [5, 6, 1],
+ [6, 0, 2],
+ [0, 1, 3],
+ [1, 2, 4],
+ [2, 3, 5],
+ [3, 4, 6],
+ [4, 5, 0],
+ [5, 6, 1],
+ [6, 0, 2],
+ [0, 1, 3]]
+sage: x = BIBD([9,3,1])
+sage: x.generate()
+<__main__.AG object at 0x67120cfc1d30>
+sage: x.list_blocks()
+[[(0, 0), (1, 0), (2, 0)],
+ [(0, 1), (1, 1), (2, 1)],
+ [(0, 2), (1, 2), (2, 2)],
+ [(0, 0), (1, 1), (2, 2)],
+ [(1, 0), (2, 1), (0, 2)],
+ [(2, 0), (0, 1), (1, 2)],
+ [(0, 0), (1, 2), (2, 1)],
+ [(1, 0), (2, 2), (0, 1)],
+ [(2, 0), (0, 2), (1, 1)],
+ [(0, 0), (0, 1), (0, 2)],
+ [(1, 0), (1, 1), (1, 2)],
+ [(2, 0), (2, 1), (2, 2)]]
 ```
 
 Currently, we can recursively check a variety of conditions, including: being an affine geometry, being a projective geometry, originating from quadratic residues, being a Hadamard design, being a complement of a design that exists, being a residual of a design that exists, being a multiple of a design that exists, violating Fishers inequality, and violating the Bruck Ryser Chowla theorem. Obviously it cannot definitively use the Bruck Ryser Chowla theorem, it can check some obvious cases and apply some basic theorems to it.
