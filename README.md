@@ -197,11 +197,17 @@ Perhaps we want to know if a design exists at all.
 
 ```
 sage: x = BIBD([53,13,3])
-sage: x.existence()
-(False, 'common divisibility argument mod 5')
+sage: exist = x.existence()
+sage: exist.exist
+False
+sage: exist.message
+'common divisibility argument mod 5'
 sage: x = BIBD([7,3,1])
-sage: x.existence()
-(True, 'Hadamard design of order 2')
+sage: exist = x.existence()
+sage: exist.exist
+True
+sage: exist.message
+'Quadratic Residue 7'
 ```
 
-At the moment, we are working on a way to check if the complement exists smoothly.
+Currently, we can recursively check a variety of conditions, including: being an affine geometry, being a projective geometry, originating from quadratic residues, being a Hadamard design, being a complement of a design that exists, being a residual of a design that exists, being a multiple of a design that exists, violating Fishers inequality, and violating the Bruck Ryser Chowla theorem. Obviously it cannot definitively use the Bruck Ryser Chowla theorem, it can check some obvious cases and apply some basic theorems to it.
