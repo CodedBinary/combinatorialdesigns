@@ -69,7 +69,7 @@ class existinfo():
     '''
     Wrapper to hold existence information
     '''
-    def __init__(self, exist=0.5, method = lambda x: None, parameters=[], kwparameters=dict(), message="", parents=[]):
+    def __init__(self, exist=0.5, method=lambda x: None, parameters=[], kwparameters=dict(), message="", parents=[]):
         self.exist = exist                  # Whether the object exists
         self.parents = parents              # Any parent exist objects necessary to prove the existence of the object
         self.message = message              # A user friendly message explaining the existence
@@ -645,24 +645,31 @@ class BIBD():
         else:
             return existinfo(exist=0.5, message="maybe?")
 
-    def generate(self, exist):
+    def generate(self, exist=-1):
         '''
         Given an exist object describing a proof of the existence of the design, generate said design
         '''
+        if exist == -1:
+            exist = self.existence()
+        assert exist.exist is True, "Design doesn't exist"
+
         generated_params = exist.parameters
         generated_kwparams = exist.kwparameters
+        dummy_BIBD = BIBD([7, 3, 1])
 
         for i, param in enumerate(generated_params):
             if type(param) == existinfo:
-                generated_params[i] = BIBD.generate(0, param)
+                generated_params[i] = BIBD.generate(dummy_BIBD, param)
 
         for key in generated_kwparams:
             for i, val in enumerate(generated_kwparams[key]):
                 if type(val) == existinfo:
-                    generated_kwparams[key][i] = BIBD.generate(0, val)
+                    generated_kwparams[key][i] = BIBD.generate(dummy_BIBD, val)
 
         design = exist.method(*generated_params, **generated_kwparams)
         design.generate()
+        self.V = design.V
+        self.blocks = design.blocks
         return design
 
     def verify_balance_random(self):
