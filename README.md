@@ -1,8 +1,8 @@
 # combinatorialdesigns
 
-A script to generate combinatorial designs. Currently working on those based on affine and projective geometries and difference systems. Can also check for various simple properties of combinatorial designs with some small work.
+A script to generate combinatorial designs. 
 
-Uses Sagemath. At the moment I'm running it by executing `sage design.sage`
+Uses Sagemath. At the moment I'm running it by executing `sage design.sage`. For interactive usage, run `load("design.sage")` after starting sage in the project directory.
 
 # Features
  - Calculation of parameters for designs
@@ -13,6 +13,7 @@ Uses Sagemath. At the moment I'm running it by executing `sage design.sage`
  - Recursive generation of designs
  - Computation of derived, residual, complement, and multiple designs
  - Computation of cyclic designs given a set of sets to act on
+ - Basic attempts at checking designs quickly
 
 # What is a design?
 
@@ -122,7 +123,7 @@ sage: x.list_points()
 [1, 2, 3, 4, 5, 6, 7, 8]
 ```
 
-So they automatically update. If this behaviour is undesired, we have a method to fix that.
+So they automatically update. This is because y is a derived design of x, and it refers back to information of x. If this behaviour is undesired, we have a method to fix that.
 
 ```
 sage: x = AG(3,2,2)
@@ -166,32 +167,11 @@ sage: y.list_blocks()
  [(0, 0, 0), (0, 1, 0), (0, 0, 1), (0, 1, 1)]]
 ```
 
-As you can see, we bijected x, but we decoupled y first. As a result, the points of y are what they were at the time of decoupling.
+As you can see, we bijected x, but we "decoupled" y first, so it no longer referred to x. As a result, the points of y are what they were at the time of decoupling.
 
 We can create designs from designs, though. Let's look at the complement.
 
 ```
-sage: y = x.complement()
-sage: x.parameters
-(8, 4, 3)
-sage: y.parameters
-(8, 4, 3)
-sage: y.generate()
-sage: y.list_blocks()
-[[5, 6, 7, 8],
- [1, 2, 3, 4],
- [3, 4, 5, 6],
- [1, 2, 7, 8],
- [2, 4, 5, 7],
- [1, 3, 6, 8],
- [2, 3, 5, 8],
- [1, 4, 6, 7],
- [3, 4, 7, 8],
- [1, 2, 5, 6],
- [2, 3, 6, 7],
- [1, 4, 5, 8],
- [2, 4, 6, 8],
- [1, 3, 5, 7]]
 ```
 
 Perhaps we want to know if a design exists at all.
