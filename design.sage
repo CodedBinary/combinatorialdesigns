@@ -9,6 +9,7 @@ from random import randint
 # Documentation of sage classes and input/output/example
 # Documentation of functions
 # More example usage in README
+# Verify example in README
 
 # Computationally efficiently and definitively verify the design
 # Speed up PG.generate() and other timing based stuff
@@ -584,7 +585,7 @@ class BIBD():
                     field = Integers(m)
                     possiblez = set([i**2 for i in field]).intersection(set([c*i**2 for i in field]))
                     if possiblez == {0}:
-                        return existinfo(exist=False, message="common divisibility argument mod " + str(m))
+                        return existinfo(exist=False, message="Bruck Ryser Chowla: common divisibility argument mod " + str(m))
             else:
                 return existinfo(exist=0.5, message="solution to BRC given by " + str((0, 1, 0)) + " or " + str((0, 0, 1)))
 
@@ -603,9 +604,9 @@ class BIBD():
             # then x^2+y^2 in {0,1,2}, and since {x in Z_3 | exists c in Z_3\{0} : cx = 0} = {0},
             # we know that x^2+y^2 in {0}, so we have a common divisibility argument.
             elif a % 3 == 0 and b % 3 == 0 and (a/3) % 3 == (b/3) % 3 and ((a/3) % 3 == 2 or (a/3) % 3 == 1):
-                return existinfo(exist=False, message="common divisibility argument mod 3")
+                return existinfo(exist=False, message="Bruck Ryser Chowla: common divisibility argument mod 3")
             elif (a % 4 == 0 and (a/4) % 4 != 0 and (b % 4 == 2 or b % 4 == 3)) or (b % 4 == 0 and (b/4) % 4 != 0 and (a % 4 == 2 or a % 4 == 3)):
-                return existinfo(exist=False, message="common divisibility argument mod 4")
+                return existinfo(exist=False, message="Bruck Ryser Chowla: common divisibility argument mod 4")
 
             # Giving up
             else:
@@ -873,7 +874,7 @@ class PG(BIBD):
         if d == -1:
             d = n-1
         self.n, self.q, self.d = n, q, d
-        self.v, self.k, self.lambduh = (binom(n+1, 1, q), binom(n, 1, q), binom(n-1, 1, q))
+        self.v, self.k, self.lambduh = (binom(n+1, 1, q), binom(d+1, 1, q), binom(n-1, d-1, q))
         self.parameters = (int(self.v), int(self.k), int(self.lambduh))
         BIBD.__init__(self, self.parameters)
 
