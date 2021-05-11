@@ -7,11 +7,12 @@ Uses Sagemath. At the moment I'm running it by executing `sage design.sage`
 # Features
  - Calculation of parameters for designs
  - Computation of designs of projective and affine geometries
- - Basic existence checking, including obvious necessary conditions, attempts at using the Bruck Ryser Chowler theorem
- - Basic checking for ability to compute a design from Hadamard matrix, affine or projective geometry
- - Computation of derived, residual, complement designs
- - Computation of cyclic designs given a set of sets to act on
+ - Computation of Hadamard matrices and designs
  - Generation of difference set via quadratic residues
+ - Recursive existence checking
+ - Recursive generation of designs
+ - Computation of derived, residual, complement, and multiple designs
+ - Computation of cyclic designs given a set of sets to act on
 
 # What is a design?
 
