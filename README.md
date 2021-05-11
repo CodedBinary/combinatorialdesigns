@@ -172,6 +172,50 @@ As you can see, we bijected x, but we "decoupled" y first, so it no longer refer
 We can create designs from designs, though. Let's look at the complement.
 
 ```
+sage: x = PG(3,2,1)
+sage: y = x.complement()
+sage: x.generate()
+sage: y.generate()
+<__main__.complement_design object at 0x6056dd4b1370>
+sage: y.parameters
+(15, 12, 22)
+sage: x.biject_obvious()
+sage: y.list_blocks()
+[[1, 2, 3, 5, 6, 7, 9, 10, 11, 12, 13, 14],
+ [1, 2, 3, 4, 6, 7, 8, 10, 11, 12, 13, 14],
+ [1, 2, 3, 4, 5, 7, 8, 9, 11, 12, 13, 14],
+ [1, 2, 3, 4, 5, 6, 8, 9, 10, 12, 13, 14],
+ [0, 2, 3, 4, 6, 7, 9, 10, 11, 12, 13, 14],
+ [0, 2, 3, 5, 6, 7, 8, 10, 11, 12, 13, 14],
+ [0, 2, 3, 4, 5, 6, 8, 9, 11, 12, 13, 14],
+ [0, 2, 3, 4, 5, 7, 8, 9, 10, 12, 13, 14],
+ [0, 1, 3, 4, 5, 7, 9, 10, 11, 12, 13, 14],
+ [0, 1, 3, 4, 5, 6, 8, 10, 11, 12, 13, 14],
+ [0, 1, 3, 5, 6, 7, 8, 9, 11, 12, 13, 14],
+ [0, 1, 3, 4, 6, 7, 8, 9, 10, 12, 13, 14],
+ [0, 1, 2, 4, 5, 6, 9, 10, 11, 12, 13, 14],
+ [0, 1, 2, 4, 5, 7, 8, 10, 11, 12, 13, 14],
+ [0, 1, 2, 4, 6, 7, 8, 9, 11, 12, 13, 14],
+ [0, 1, 2, 5, 6, 7, 8, 9, 10, 12, 13, 14],
+ [1, 3, 4, 5, 6, 7, 8, 9, 10, 11, 13, 14],
+ [1, 2, 4, 5, 6, 7, 8, 9, 10, 11, 12, 14],
+ [0, 2, 4, 5, 6, 7, 8, 9, 10, 11, 13, 14],
+ [0, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 14],
+ [0, 1, 2, 3, 5, 7, 8, 9, 10, 11, 13, 14],
+ [0, 1, 2, 3, 5, 6, 8, 9, 10, 11, 12, 14],
+ [0, 1, 2, 3, 4, 6, 8, 9, 10, 11, 13, 14],
+ [0, 1, 2, 3, 4, 7, 8, 9, 10, 11, 12, 14],
+ [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13],
+ [0, 1, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13],
+ [0, 1, 2, 3, 6, 7, 8, 9, 10, 11, 12, 13],
+ [0, 1, 2, 3, 4, 5, 8, 9, 10, 11, 12, 13],
+ [0, 1, 2, 3, 4, 5, 6, 7, 9, 11, 13, 14],
+ [0, 1, 2, 3, 4, 5, 6, 7, 9, 10, 12, 14],
+ [0, 1, 2, 3, 4, 5, 6, 7, 8, 10, 13, 14],
+ [0, 1, 2, 3, 4, 5, 6, 7, 8, 11, 12, 14],
+ [0, 1, 2, 3, 4, 5, 6, 7, 10, 11, 12, 13],
+ [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 12, 13],
+ [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]]
 ```
 
 Perhaps we want to know if a design exists at all.
@@ -222,6 +266,7 @@ sage: x.list_blocks()
  [(0, 0), (0, 1), (0, 2)],
  [(1, 0), (1, 1), (1, 2)],
  [(2, 0), (2, 1), (2, 2)]]
+ sage: x.verify_balance_random()
 ```
 
 Currently, we can recursively check a variety of conditions, including: being an affine geometry, being a projective geometry, originating from quadratic residues, being a Hadamard design, being a complement of a design that exists, being a residual of a design that exists, being a multiple of a design that exists, violating Fishers inequality, and violating the Bruck Ryser Chowla theorem. Obviously it cannot definitively use the Bruck Ryser Chowla theorem, it can check some obvious cases and apply some basic theorems to it.
