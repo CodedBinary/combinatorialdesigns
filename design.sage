@@ -160,7 +160,7 @@ class BIBD():
             parameters  (list): See BIBD.__init__
         '''
         x = self.complement()
-        x = x.residual()
+        x = x.residual_inverse()
         x = x.complement()
         return x.parameters
 
@@ -271,13 +271,13 @@ class BIBD():
     ### Listing information ###
     def list_points(self):
         '''
-            Returns the points of a design, in list form
+            Returns the (values of the) points of a design, in list form
         '''
         return [point.value for point in self.V]
 
     def list_blocks(self):
         '''
-            Returns the blocks of a design, in list form
+            Returns the (elements of the) blocks of a design, in list form
         '''
         return [[point.value for point in block.elements] for block in self.blocks]
 
@@ -302,10 +302,10 @@ class BIBD():
 
         if n == 2:
             exist = existinfo(
-                    exist=True, 
-                    message="Hadamard matrix of order 2 exists", 
-                    parameters=[2], 
-                    method=Hadamard_matrix)
+                exist=True,
+                message="Hadamard matrix of order 2 exists",
+                parameters=[2],
+                method=Hadamard_matrix)
             return exist
 
         if n % 4 != 0:
