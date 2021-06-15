@@ -54,6 +54,9 @@ class designpoint():
     def __init__(self, value):
         self.value = value
 
+    def __repr__(self):
+        return str(self.value)
+
 class designblock():
     '''
     A block of a design
@@ -61,6 +64,9 @@ class designblock():
     # This was done so that changing blocks updates things like the resolution classes
     def __init__(self, elements):
         self.elements = elements
+
+    def __repr__(self):
+        return str(self.elements)
 
     def setminus(self, block):
         return designblock([i for i in self.elements if i not in block.elements])
