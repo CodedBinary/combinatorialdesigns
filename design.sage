@@ -80,7 +80,62 @@ class existinfo():
         self.parameters = parameters        # The parameters for the method
         self.kwparameters = kwparameters    # The kwparameters for the method
 
-class BIBD():
+class Design():
+
+    def pointinV(self, point):
+        '''
+        Returns the point object in the set of the designs points with the given value.
+
+        Inputs:
+            point   (?): Value of a point of a design
+
+        Outputs:
+            v       (designpoint):  Point object of the design
+        '''
+        for v in self.V:
+            if point == v.value:
+                return v
+
+    ### Bijection ###
+    def biject_obvious(self):
+        '''
+        Bijects from the current set of points to a subset of the integers. Only changes the
+        values of the points.
+        '''
+        for i in range(len(self.V)):
+            self.V[i].value = i
+
+    def decouple_points(self):
+        '''
+        Changes the blocks of a design from referring to its parent to referring to itself. Hence
+        any change to the parents blocks will not affect self
+        '''
+        self.V = [designpoint(point.value) for point in self.parent.V]
+        for block in self.blocks:
+            for i in range(len(block.elements)):
+                block.elements[i] = self.pointinV(block.elements[i].value)
+
+    ### Listing information ###
+    def list_points(self):
+        '''
+            Returns the (values of the) points of a design, in list form
+        '''
+        return [point.value for point in self.V]
+
+    def list_blocks(self):
+        '''
+            Returns the (elements of the) blocks of a design, in list form
+        '''
+        return [[point.value for point in block.elements] for block in self.blocks]
+
+    def list_resolution_classes(self):
+        '''
+            Returns the resolution classes of a design, in list form
+        '''
+        return [[[point.value for point in block.elements] for block in resolclass] for resolclass in self.resolutionclasses]
+
+
+class BIBD(Design):
     '''
     Balanced incomplete block design. A balanced incomplete block design is formed from a set of points V
     and a collection of k-subsets of V, called B, with the property that every two points in V occur in the
@@ -128,20 +183,6 @@ class BIBD():
             self.symmetric = True
         else:
             self.symmetric = False
-
-    def pointinV(self, point):
-        '''
-        Returns the point object in the set of the designs points with the given value.
-
-        Inputs:
-            point   (?): Value of a point of a design
-
-        Outputs:
-            v       (designpoint):  Point object of the design
-        '''
-        for v in self.V:
-            if point == v.value:
-                return v
 
     ### Creating new designs ###
     def derived_params(self):
@@ -250,44 +291,6 @@ class BIBD():
             multiple design     (multiple_design): Multiple design
         '''
         return multiple_design(self, n)
-
-    ### Bijection ###
-    def biject_obvious(self):
-        '''
-        Bijects from the current set of points to a subset of the integers. Only changes the
-        values of the points.
-        '''
-        for i in range(len(self.V)):
-            self.V[i].value = i
-
-    def decouple_points(self):
-        '''
-        Changes the blocks of a design from referring to its parent to referring to itself. Hence
-        any change to the parents blocks will not affect self
-        '''
-        self.V = [designpoint(point.value) for point in self.parent.V]
-        for block in self.blocks:
-            for i in range(len(block.elements)):
-                block.elements[i] = self.pointinV(block.elements[i].value)
-
-    ### Listing information ###
-    def list_points(self):
-        '''
-            Returns the (values of the) points of a design, in list form
-        '''
-        return [point.value for point in self.V]
-
-    def list_blocks(self):
-        '''
-            Returns the (elements of the) blocks of a design, in list form
-        '''
-        return [[point.value for point in block.elements] for block in self.blocks]
-
-    def list_resolution_classes(self):
-        '''
-            Returns the resolution classes of a design, in list form
-        '''
-        return [[[point.value for point in block.elements] for block in resolclass] for resolclass in self.resolutionclasses]
 
     ### Basic existence methods ###
 
