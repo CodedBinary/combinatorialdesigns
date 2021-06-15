@@ -81,6 +81,7 @@ class existinfo():
         self.kwparameters = kwparameters    # The kwparameters for the method
 
 class Design():
+    # Consider making a method to update the parameters of the design when it is changed??
 
     def pointinV(self, point):
         '''
@@ -134,6 +135,24 @@ class Design():
         '''
         return [[[point.value for point in block.elements] for block in resolclass] for resolclass in self.resolutionclasses]
 
+    def incident(self, point, blocks=[]):
+        '''
+            Returns a list of blocks containing a point of the design
+        '''
+        if blocks == []:
+            incidence = [block for block in self.blocks if point in block.elements]
+        else:  # Probably hacky lol
+            incidence = [block for block in blocks if point in block.value.elements]
+        return incidence
+
+    def dual(self):
+        '''
+            Returns the dual of a design. The dual, or incidence structure, is the design where the set of points is the blocks of the original design, and the blocks are the sets of blocks containing an element from the original design. 
+        '''
+        dual = Design()
+        dual.V = [designpoint(block) for block in self.blocks]
+        dual.blocks = [designblock(self.incident(point, dual.V)) for point in self.V]
+        return dual
 
 class BIBD(Design):
     '''
